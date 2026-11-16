@@ -1011,8 +1011,8 @@ PERSON_FIELDS: tuple[ModelField, ...] = (
         "manual",
         description=(
             "Annual property taxes for all properties (cash out the door). "
-            "Sum multiple county tax bills. Feeds Spending builder; distinct from "
-            "Itemized SALT (tax deduction, often capped)."
+            "Sum multiple county tax bills. The projection adds this on top of "
+            "base living expenses. Distinct from Itemized SALT (tax deduction, often capped)."
         ),
         llm_research=False,
     ),

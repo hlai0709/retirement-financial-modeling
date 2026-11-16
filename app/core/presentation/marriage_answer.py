@@ -7,6 +7,7 @@ future year and files single until that year.
 
 from __future__ import annotations
 
+from datetime import date
 from typing import Any
 
 from app.core.planning_snapshot import PlanningSnapshot
@@ -33,12 +34,28 @@ def _filing_text(snapshot: PlanningSnapshot) -> str:
     return str(snapshot.shared.get("filing_status") or "").strip()
 
 
+def _calendar_year(text: str) -> int | None:
+    if text in {"", "0"}:
+        return None
+    try:
+        year = int(float(text))
+    except ValueError:
+        return None
+    return year
+
+
 def marriage_answer(snapshot: PlanningSnapshot) -> str:
-    """Stored answer: yes, no, or blank when the question has not been answered."""
+    """Stored answer: yes, no, or blank when the question has not been answered.
+
+    A year already in the past is an earlier plan's "when did you marry?"
+    answer, so the page opens on Yes instead of a future-year error.
+    """
     if snapshot.household_mode != "joint":
         return ""
-    year = _year_text(snapshot)
-    if year not in {"", "0"}:
+    year = _calendar_year(_year_text(snapshot))
+    if year is not None:
+        if year < date.today().year:
+            return _YES
         return _NO
     if _filing_text(snapshot) == "mfj":
         return _YES

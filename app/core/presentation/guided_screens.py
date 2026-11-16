@@ -105,9 +105,35 @@ _EXAMPLE_REVIEW_FIELDS: tuple[tuple[str, str, str], ...] = (
     ("base_expenses", "wife", "Spouse's spending"),
     ("annual_earned_income", "self", "Your income"),
     ("annual_earned_income", "wife", "Spouse's income"),
+    ("annual_contributions", "self", "Your annual retirement savings"),
+    ("annual_contributions", "wife", "Spouse's annual retirement savings"),
     ("ss_amount", "self", "Your Social Security"),
     ("ss_amount", "wife", "Spouse's Social Security"),
 )
+
+
+_SPOUSE_HOUSING_KEYS = (
+    "mortgage_annual",
+    "mortgage_payoff_year",
+    "mortgage_second_annual",
+    "mortgage_second_payoff_year",
+    "property_tax_annual",
+)
+
+
+def _housing_value_set(raw: object) -> bool:
+    text = str(raw or "").strip().replace(",", "").replace("$", "")
+    if text in {"", "0", "0.0", "0.00"}:
+        return False
+    try:
+        return float(text) != 0
+    except ValueError:
+        return True
+
+
+def _spouse_housing_is_set(snapshot: PlanningSnapshot) -> bool:
+    wife = snapshot.persons.get("wife") or {}
+    return any(_housing_value_set(wife.get(key)) for key in _SPOUSE_HOUSING_KEYS)
 
 
 def guided_step_field_rows(
@@ -131,6 +157,8 @@ def guided_step_field_rows(
         if field.scope == "person" and field_person is None:
             field_person = "self"
         rows.append((field, field_person))
+    if joint and step_id == "housing" and _spouse_housing_is_set(snapshot):
+        rows.extend((field, "wife") for field, field_person in rows if field_person == "self")
     return rows
 
 

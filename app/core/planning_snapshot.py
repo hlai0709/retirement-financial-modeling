@@ -181,6 +181,14 @@ class PlanningSnapshot:
                 field.key: parse_field_value(field, self.persons[person].get(field.key, ""))
                 for field in PERSON_FIELDS
             }
+        from app.core.presentation.spending_builder import property_tax_folded_into_base
+
+        for person in PERSONS:
+            folded = property_tax_folded_into_base(self, person)
+            if folded <= 0:
+                continue
+            base = float(params["persons"][person].get("base_expenses") or 0)
+            params["persons"][person]["base_expenses"] = max(0.0, base - folded)
         return params
 
     def to_dict(self) -> dict[str, Any]:

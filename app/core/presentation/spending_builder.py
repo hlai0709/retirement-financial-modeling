@@ -130,8 +130,12 @@ BASE_EXPENSE_CATEGORIES: frozenset[str] = BASE_RECURRING_CATEGORIES | BASE_LIFES
 
 
 def counts_toward_base(category_id: str) -> bool:
-    """Base living excludes healthcare (it has its own premium fields) and mortgage."""
-    if category_id == "healthcare":
+    """Base living excludes healthcare, mortgage, and property tax.
+
+    Mortgage and property tax have their own plan fields. The projection adds
+    those on top of base, so folding them into Base Expenses would count twice.
+    """
+    if category_id in {"healthcare", "property_tax"}:
         return False
     return category_id in BASE_EXPENSE_CATEGORIES or category_id == "housing_rent"
 IGNORE_FOR_BASE_CATEGORIES: frozenset[str] = frozenset(
@@ -510,11 +514,14 @@ def build_spending_builder(
     rows = []
     base_total = 0.0
     mortgage_total = 0.0
+    property_tax_total = 0.0
     for cat in SPENDING_CATEGORIES:
         cid = cat["id"]
         annual = amounts.get(cid, 0.0)
         if cid == "mortgage":
             mortgage_total += annual
+        elif cid == "property_tax":
+            property_tax_total += annual
         elif counts_toward_base(cid):
             base_total += annual
         rows.append(
@@ -541,7 +548,8 @@ def build_spending_builder(
         "categories": rows,
         "base_total": round(base_total, 2),
         "mortgage_total": round(mortgage_total, 2),
-        "grand_total": round(base_total + mortgage_total, 2),
+        "property_tax_total": round(property_tax_total, 2),
+        "grand_total": round(base_total + mortgage_total + property_tax_total, 2),
         "current_base_expenses": current_base_val,
         "mortgage_payoff_year": str(
             (snapshot.persons.get(person) or {}).get("mortgage_payoff_year") or ""
@@ -550,6 +558,7 @@ def build_spending_builder(
             "Base Expenses = recurring bills + food + dining + entertainment + travel (+ rent).",
             "Other / education / shopping are shown for editing but not added into Base for now.",
             "Mortgage is separate (Mortgage Annual until payoff year).",
+            "Property tax is separate. The projection adds Property Tax Annual on its own.",
             "Amounts are annual USD. Edit monthly or annual — they stay in sync in the UI.",
         ],
     }
@@ -1116,6 +1125,32 @@ def suggest_spending_averages_with_llm(
     }
 
 
+def property_tax_folded_into_base(snapshot: PlanningSnapshot, person: str) -> float:
+    """Property tax an older Spending builder apply already summed into base.
+
+    Current applies keep the tax out of base. An older saved plan still has it
+    inside base when that base equals the builder total, tax line included.
+    """
+    if person not in {"self", "wife"}:
+        return 0.0
+    breakdown = (getattr(snapshot, "spending_breakdown", None) or {}).get(person) or {}
+    tax = _money(breakdown.get("property_tax"))
+    if tax <= 0:
+        return 0.0
+    if snapshot.get_source(person, "base_expenses") != "Spending builder":
+        return 0.0
+    expected = tax
+    for cid, amount in breakdown.items():
+        if str(cid) == "property_tax":
+            continue
+        if counts_toward_base(str(cid)):
+            expected += _money(amount)
+    base = _money((snapshot.persons.get(person) or {}).get("base_expenses"))
+    if abs(base - expected) < 1.0:
+        return tax
+    return 0.0
+
+
 def apply_spending_builder(
     snapshot: PlanningSnapshot,
     *,
@@ -1200,6 +1235,11 @@ def apply_spending_builder(
             f"{'You' if person == 'self' else 'Spouse'}: "
             f"Base Expenses ${base_total:,.0f}/yr"
             + (f" + Mortgage ${mortgage_total:,.0f}/yr" if mortgage_total else "")
+            + (
+                f" + Property tax ${property_tax_total:,.0f}/yr"
+                if property_tax_total
+                else ""
+            )
             + healthcare_note
         ),
     }

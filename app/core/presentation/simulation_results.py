@@ -289,10 +289,18 @@ def _plain_success(rate: float, target: float | None) -> str:
     return sentence[:-1] + f", against a target of {target_pct}."
 
 
+def _run_out_line(age: int, *, usual: bool, joint: bool) -> str:
+    whose = " (the younger spouse)" if joint else ""
+    if usual:
+        return f"When the money runs out, it is usually around age {age}{whose}."
+    return f"In this projection, the money runs out at age {age}{whose}."
+
+
 def results_headline(
     *,
     adviser: dict[str, Any] | None,
     tabs: list[dict[str, Any]],
+    household_mode: str = "",
 ) -> dict[str, Any]:
     """On track or not, in plain words, before the charts."""
     primary = next((tab for tab in tabs if tab.get("key") == "joint"), tabs[0] if tabs else {})
@@ -300,6 +308,15 @@ def results_headline(
     deterministic = primary.get("deterministic") or {}
     status = str((adviser or {}).get("goal_status") or "")
     adviser_ok = bool((adviser or {}).get("ok"))
+    joint = household_mode == "joint" or any(tab.get("key") == "joint" for tab in tabs)
+    monte_present = bool(monte)
+    ending = float(deterministic.get("ending_balance") or 0) if deterministic else 0.0
+    det_lasts = (
+        not monte_present
+        and bool(deterministic)
+        and deterministic.get("depletion_age") is None
+        and ending > 0
+    )
     title = "Here is where the plan stands"
     tone = "neutral"
     if adviser_ok and status.startswith("On track"):
@@ -308,6 +325,9 @@ def results_headline(
     elif adviser_ok and (status.startswith("Below target") or "depletes assets" in status):
         title = "You are not on track yet"
         tone = "warn"
+    elif det_lasts:
+        title = "You are on track"
+        tone = "ok"
 
     lines: list[str] = []
     rate = None
@@ -322,11 +342,13 @@ def results_headline(
 
     depletion = monte.get("median_depletion_age")
     if depletion is not None:
-        lines.append(f"When the money runs out, it is usually around age {int(round(float(depletion)))}.")
+        lines.append(
+            _run_out_line(int(round(float(depletion))), usual=True, joint=joint)
+        )
     elif deterministic.get("depletion_age") is not None:
         age = int(round(float(deterministic["depletion_age"])))
-        lines.append(f"In this projection, the money runs out at age {age}.")
-    elif deterministic and not monte and float(deterministic.get("ending_balance") or 0) > 0:
+        lines.append(_run_out_line(age, usual=False, joint=joint))
+    elif deterministic and not monte and ending > 0:
         lines.append("In this projection, the money lasts through the plan.")
     return {"title": title, "tone": tone, "lines": lines}
 
@@ -372,7 +394,11 @@ def serialize_simulation_result(
         "risk_tolerance": risk_tolerance,
         "tabs": tabs,
         "adviser": adviser,
-        "headline": results_headline(adviser=adviser, tabs=tabs),
+        "headline": results_headline(
+            adviser=adviser,
+            tabs=tabs,
+            household_mode=str(output.mode or ""),
+        ),
         "warnings": payload.warnings,
         "alerts": alerts,
     }

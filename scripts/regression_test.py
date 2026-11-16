@@ -3175,7 +3175,55 @@ def run_regression() -> RegressionReport:
         df2 = run_retirement_projection(params2)["self"]
         y2027 = df2[df2["Year"] == 2027].iloc[0]
         assert abs(float(y2027["Expenses"]) - 12_000) < 1.0, y2027["Expenses"]
-        return "mortgage + one-time expense timing OK; mortgage not inflated"
+
+        taxed = _sample_params()
+        taxed["mode"] = "separate"
+        taxed["inflation_rate"] = 0.10
+        taxed["current_year"] = 2026
+        taxed["persons"]["self"]["current_age"] = 60
+        taxed["persons"]["self"]["retirement_age"] = 60
+        taxed["persons"]["self"]["base_expenses"] = 30_000
+        taxed["persons"]["self"]["property_tax_annual"] = 8_000
+        taxed["persons"]["self"]["mortgage_annual"] = 0
+        taxed["persons"]["self"]["long_term_care_annual"] = 0
+        taxed["persons"]["self"]["health_insurance_pre_medicare"] = 0
+        taxed["persons"]["self"]["health_insurance_post_retire"] = 0
+        taxed["life_expectancy"] = 62
+        tax_df = run_retirement_projection(taxed)["self"]
+        tax_2026 = tax_df[tax_df["Year"] == 2026].iloc[0]
+        tax_2027 = tax_df[tax_df["Year"] == 2027].iloc[0]
+        assert abs(float(tax_2026["Expenses"]) - 38_000) < 1.0, tax_2026["Expenses"]
+        assert abs(float(tax_2027["Expenses"]) - (30_000 * 1.10 + 8_000 * 1.10)) < 1.0, tax_2027["Expenses"]
+
+        from app.core.planning_snapshot import PlanningSnapshot
+        from app.core.presentation.spending_builder import (
+            apply_spending_builder,
+            property_tax_folded_into_base,
+        )
+        from config.model_fields import FIELDS_BY_KEY
+
+        fresh = PlanningSnapshot()
+        fresh.set_raw(FIELDS_BY_KEY["base_expenses"], "60000", person="self")
+        fresh.set_raw(FIELDS_BY_KEY["property_tax_annual"], "8000", person="self")
+        assert property_tax_folded_into_base(fresh, "self") == 0
+        assert fresh.to_simulation_params()["persons"]["self"]["property_tax_annual"] == 8000
+        assert fresh.to_simulation_params()["persons"]["self"]["base_expenses"] == 60000
+
+        folded = PlanningSnapshot()
+        folded.spending_breakdown = {"self": {"food": 60000, "property_tax": 8000}}
+        folded.set_raw(FIELDS_BY_KEY["base_expenses"], "68000", person="self")
+        folded.set_source("self", "base_expenses", "Spending builder")
+        folded.set_raw(FIELDS_BY_KEY["property_tax_annual"], "8000", person="self")
+        assert property_tax_folded_into_base(folded, "self") == 8000
+        assert folded.to_simulation_params()["persons"]["self"]["base_expenses"] == 60000
+
+        applied = apply_spending_builder(
+            PlanningSnapshot(),
+            person="self",
+            amounts={"food": 60000, "property_tax": 8000},
+        )
+        assert applied["base_expenses"] == 60000
+        return "mortgage + one-time expense timing OK; property tax is added once"
 
     _run_check(report, "Phase 6", "Mortgage and one-time expense", check_mortgage_and_one_time_expense)
 
@@ -5631,6 +5679,92 @@ def run_regression() -> RegressionReport:
         assert headline["tone"] == "warn"
         assert "40 of 100" in headline["lines"][0]
         assert "age 82" in headline["lines"][1]
+        assert "younger spouse" in headline["lines"][1]
+
+        lasting = results_headline(
+            adviser={
+                "ok": True,
+                "goal_status": "Deterministic ending balance: $250,000 (no Monte Carlo run).",
+                "success_rate": None,
+            },
+            tabs=[{"key": "self", "deterministic": {"ending_balance": 250_000, "depletion_age": None}}],
+        )
+        assert lasting["title"] == "You are on track"
+        assert lasting["tone"] == "ok"
+        assert any("lasts through the plan" in line for line in lasting["lines"])
+        neutral = results_headline(
+            adviser={"ok": True, "goal_status": "Run Monte Carlo simulation for goal analysis."},
+            tabs=[],
+        )
+        assert neutral["title"] == "Here is where the plan stands"
+
+        from app.core.presentation.field_editor import field_is_example, one_line_caption
+        from app.core.presentation.marriage_answer import marriage_answer
+        from app.core.presentation.plan_completeness import mark_updates_touched
+
+        contrib = FIELDS_BY_KEY["annual_contributions"]
+        assert "annual_contributions" in example_keys
+        assert field_is_example(snapshot, contrib, person="self")
+        mark_updates_touched(
+            snapshot,
+            [{"key": "annual_contributions", "value": "20000", "person": "self"}],
+        )
+        assert field_is_example(snapshot, contrib, person="self")
+        touched_review = build_guided_screen(snapshot, workflow, index=workflow.index_of("review"))
+        assert any(
+            row["field_key"] == "annual_contributions" and row["person"] == "self"
+            for row in touched_review["examples"]
+        )
+        snapshot.set_raw(contrib, "1000", person="self")
+        assert not field_is_example(snapshot, contrib, person="self")
+
+        age_field = FIELDS_BY_KEY["current_age"]
+        snapshot.set_raw(age_field, "55", person="self")
+        age_spec = field_to_spec(snapshot, age_field, person="self", index=0)
+        assert not age_spec.get("example")
+        assert age_spec["caption"] == one_line_caption(age_field)
+        assert "start of the plan" in age_spec["caption"]
+        life = next(field for field in fields_for_ui_group("timeline") if field.key == "life_expectancy")
+        assert life.scope == "shared"
+        assert "this age" in one_line_caption(life)
+        for key in (
+            "retirement_age",
+            "rental_income_start",
+            "rental_growth_rate",
+            "pension_start_age",
+            "ss_start_age",
+        ):
+            assert one_line_caption(FIELDS_BY_KEY[key])
+
+        past = PlanningSnapshot()
+        past.household_mode = "joint"
+        past.shared["marriage_year"] = "2010"
+        past.persons["self"]["current_age"] = "55"
+        past.persons["wife"]["current_age"] = "53"
+        past.shared["life_expectancy"] = "95"
+        assert marriage_answer(past) == "yes"
+        past_screen = build_guided_screen(past, workflow, index=workflow.index_of("timeline"))
+        past_radio = next(field for field in past_screen["fields"] if field["key"] == "already_married")
+        assert past_radio["value"] == "yes"
+        from app.core.presentation.field_validation import validate_guided_step
+
+        past_check = validate_guided_step(past, "timeline", None, required=True)
+        assert past_check["ok"], past_check
+
+        empty_housing = [
+            (field["key"], field.get("person"))
+            for field in housing["fields"]
+        ]
+        assert ("mortgage_annual", "wife") not in empty_housing
+        snapshot.persons.setdefault("wife", {})["mortgage_annual"] = "18000"
+        spouse_housing = build_guided_screen(snapshot, workflow, index=workflow.index_of("housing"))
+        spouse_loan = next(
+            field
+            for field in spouse_housing["fields"]
+            if field["key"] == "mortgage_annual" and field.get("person") == "wife"
+        )
+        assert "spouse" in spouse_loan["label"].lower()
+        assert "principal and interest" in spouse_loan["caption"].lower()
 
         return "spouse age, marriage, housing, examples, headline"
 

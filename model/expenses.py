@@ -174,6 +174,24 @@ def person_mortgage_annual(
     return first + second
 
 
+def person_property_tax_annual(
+    person: dict[str, Any],
+    *,
+    inflation_factor: float = 1.0,
+) -> float:
+    """Cash property tax, in today's dollars grown with inflation.
+
+    This is not part of the mortgage payment and is not an itemized deduction.
+    """
+    amount = float(person.get("property_tax_annual", 0) or 0)
+    if amount <= 0:
+        return 0.0
+    factor = float(inflation_factor or 1.0)
+    if factor <= 0:
+        factor = 1.0
+    return amount * factor
+
+
 def person_one_time_expense(
     person: dict[str, Any],
     *,
@@ -199,12 +217,13 @@ def person_retirement_living_expense(
     policy: ExpensePolicy,
     inflation_factor: float = 1.0,
 ) -> tuple[float, str]:
-    """Base living expense with age-band, mortgage, and one-time add-ons."""
+    """Base living expense with age-band, mortgage, property tax, and one-time add-ons."""
     multiplier = age_expense_multiplier(
         age, retirement_age=retirement_age, policy=policy
     )
     phase = age_expense_phase_label(age, retirement_age=retirement_age, policy=policy)
     living = flows_expenses * multiplier
     living += person_mortgage_annual(person, year=year, inflation_factor=inflation_factor)
+    living += person_property_tax_annual(person, inflation_factor=inflation_factor)
     living += person_one_time_expense(person, year=year, inflation_factor=inflation_factor)
     return living, phase

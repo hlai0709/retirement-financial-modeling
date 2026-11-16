@@ -64,6 +64,13 @@ _CHOICE_LABELS: dict[str, str] = {
 }
 
 _CAPTION_OVERRIDES: dict[str, str] = {
+    "current_age": "Age at the start of the plan.",
+    "retirement_age": "Earned income and retirement savings stop at this age.",
+    "life_expectancy": "The plan runs through this age.",
+    "rental_income_start": "Annual rent received today, before it grows.",
+    "rental_growth_rate": "How fast that rent rises each year.",
+    "pension_start_age": "The age the pension check begins.",
+    "ss_start_age": "The age the Social Security check begins.",
     "mortgage_annual": "Principal and interest only, not escrow.",
     "mortgage_second_annual": "Principal and interest only, not escrow.",
     "property_tax_annual": "What you pay the county. This is separate from the tax deduction.",
@@ -111,13 +118,14 @@ def field_is_example(
     *,
     person: str | None,
 ) -> bool:
-    """True when a personal amount or age is still the catalog sample."""
+    """True when a personal amount or age is still the catalog sample.
+
+    Submitting the page marks the field touched. That does not retire the
+    sample: it stays an example until the number changes or a document sets it.
+    """
     if field.field_type not in {"money", "age"}:
         return False
     scope_person = person if field.scope == "person" else None
-    touch_scope = scope_person or "shared"
-    if f"{touch_scope}:{field.key}" in snapshot.wizard.touched_fields:
-        return False
     if snapshot.source_key(scope_person, field.key) in snapshot.field_sources:
         return False
     raw = snapshot.get_raw(field, person=scope_person).strip().replace(",", "").replace("$", "")
