@@ -497,7 +497,12 @@ def _revert_applied_fields(snapshot: PlanningSnapshot, entry: dict[str, Any]) ->
             from app.core.lazy_mode.orchestrator import drop_property_tax_component
 
             component = str(change.get("bill_component") or "")
-            if component and drop_property_tax_component(snapshot, scope, component):
+            if component and drop_property_tax_component(
+                snapshot,
+                scope,
+                component,
+                str(change.get("applied") or ""),
+            ):
                 restored += 1
                 continue
         current = snapshot.get_raw(field, person=scope)

@@ -949,6 +949,50 @@ def run_regression() -> RegressionReport:
         seeded_keys = [item.field_key for item in seeded]
         assert "mortgage_annual" not in seeded_keys
         assert "itemized_mortgage_interest" in seeded_keys
+        assert "mortgage_payoff_year" in seeded_keys
+
+        only_loan = PlanningSnapshot()
+        only_loan.set_raw(FIELDS_BY_KEY["mortgage_annual"], "24000", person="self")
+        only_loan.set_source("self", "mortgage_annual", "Mortgage statement import")
+        only_loan.set_raw(FIELDS_BY_KEY["mortgage_payoff_year"], "2050", person="self")
+        only_loan.set_raw(FIELDS_BY_KEY["mortgage_payoff_month"], "6", person="self")
+        only_loan.set_raw(FIELDS_BY_KEY["itemized_mortgage_interest"], "9000")
+        mismatched_one = {
+            item.field_key: item
+            for item in _stack_mortgage_if_needed(
+                only_loan,
+                [
+                    suggestion("itemized_mortgage_interest", "15000", "high"),
+                    suggestion("mortgage_payoff_year", "2030", "high"),
+                    suggestion("mortgage_payoff_month", "3", "high"),
+                ],
+                document_id="form_1098",
+                person="self",
+            )
+        }
+        assert "mortgage_payoff_year" not in mismatched_one
+        assert "mortgage_payoff_month" not in mismatched_one
+        assert "mortgage_second_payoff_year" not in mismatched_one
+        assert mismatched_one["itemized_mortgage_interest_second"].raw_value == "15000"
+
+        close_to_both = PlanningSnapshot()
+        close_to_both.set_raw(FIELDS_BY_KEY["mortgage_annual"], "24000", person="self")
+        close_to_both.set_source("self", "mortgage_annual", "Mortgage statement import")
+        close_to_both.set_raw(FIELDS_BY_KEY["mortgage_second_annual"], "18000", person="self")
+        close_to_both.set_source("self", "mortgage_second_annual", "Mortgage statement import")
+        close_to_both.set_raw(FIELDS_BY_KEY["itemized_mortgage_interest"], "9000")
+        close_to_both.set_raw(FIELDS_BY_KEY["itemized_mortgage_interest_second"], "8500")
+        stayed = {
+            item.field_key: item
+            for item in _stack_mortgage_if_needed(
+                close_to_both,
+                [suggestion("itemized_mortgage_interest", "8800", "high")],
+                document_id="form_1098",
+                person="self",
+            )
+        }
+        assert stayed["itemized_mortgage_interest"].raw_value == "8800"
+        assert "itemized_mortgage_interest_second" not in stayed
 
         snapshot.set_raw(FIELDS_BY_KEY["itemized_mortgage_interest"], "9000")
         snapshot.set_raw(FIELDS_BY_KEY["itemized_mortgage_interest_second"], "4000")
@@ -1094,6 +1138,12 @@ def run_regression() -> RegressionReport:
         assert removed_second["reverted"] == 1
         assert without_second.get_raw(FIELDS_BY_KEY["property_tax_annual"], person="self") == "8000"
         assert without_second.persons["self"]["_property_tax_bills"] == "8000"
+
+        both_orders = two_bills()
+        assert remove_entry(both_orders, "bill-a")["reverted"] == 1
+        assert remove_entry(both_orders, "bill-b")["reverted"] == 1
+        assert both_orders.get_raw(FIELDS_BY_KEY["property_tax_annual"], person="self") == "0"
+        assert both_orders.persons["self"].get("_property_tax_bills", "") == ""
         return "an edited property-tax total is not rebuilt from a stale bill list"
 
     _run_check(

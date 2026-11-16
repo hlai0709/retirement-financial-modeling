@@ -620,12 +620,14 @@ def drop_property_tax_component(
     snapshot: PlanningSnapshot,
     person: str,
     component_text: str,
+    applied_text: str = "",
 ) -> bool:
     """Remove one stored bill and set the total to what remains.
 
-    Used when a deleted import is no longer the value on the field because a
-    later bill was added on top. A single stored bill falls through to the
-    ordinary restore.
+    A single stored bill normally falls through to the ordinary restore, which
+    puts back the value from before that import. The exception is the second
+    delete: the other bill is already gone, so the field shows this bill alone
+    and no longer equals the sum this import wrote. That last bill is cleared.
     """
     from config.field_values import format_field_value
     from config.model_fields import FIELDS_BY_KEY
@@ -641,11 +643,24 @@ def drop_property_tax_component(
         return False
     total = _snapshot_money(snapshot, "property_tax_annual", person)
     bills = _bill_components(snapshot, person, total)
-    if len(bills) < 2 or abs(sum(bills) - total) > 1.0:
+    if abs(sum(bills) - total) > 1.0:
         return False
     matched = next((index for index, bill in enumerate(bills) if abs(bill - component) <= 1.0), None)
     if matched is None:
         return False
+    if len(bills) == 1:
+        try:
+            applied = float(str(applied_text).replace(",", "").replace("$", "").strip() or 0)
+        except ValueError:
+            return False
+        # The field still shows exactly what this import wrote, so the
+        # ordinary restore can put back the earlier value.
+        if applied <= 0 or abs(total - applied) <= 1.0:
+            return False
+        snapshot.set_raw(field, format_field_value(field, 0.0), person=person)
+        snapshot.set_source(person, field.key, "Manual")
+        _store_property_tax_bills(snapshot, person, [])
+        return True
     del bills[matched]
     snapshot.set_raw(field, format_field_value(field, sum(bills)), person=person)
     _store_property_tax_bills(snapshot, person, bills)
@@ -889,12 +904,12 @@ def _stack_mortgage_if_needed(
         )
         if matches_second and not matches_first:
             action = "form_second"
-        elif matches_first or second_payment <= 0:
+        elif matches_first:
             action = "form_first"
         elif proposed_year > 0:
-            # A maturity that matches neither loan must not rewrite either payoff.
-            # Interest fills an empty second figure or refreshes a close one.
-            # A different amount already stored on the second loan stays put.
+            # One loan or two, a maturity that matches neither must not rewrite
+            # the payoff already on the plan. Interest fills an empty second
+            # figure or refreshes a close one.
             if (
                 new_interest > 0
                 and first_interest > 0
@@ -905,12 +920,31 @@ def _stack_mortgage_if_needed(
                 action = "form_drop_payoff"
             else:
                 action = "form_skip_interest"
-        elif second_interest > 0 and _amounts_within(second_interest, new_interest):
-            action = "form_second"
-        elif first_interest <= 0 or _amounts_within(first_interest, new_interest):
+        elif (
+            new_interest > 0
+            and first_interest > 0
+            and _amounts_within(first_interest, new_interest)
+        ):
+            # No payoff on this row. An amount close to both loans stays on
+            # the first, which is the field the row already names.
             action = "form_first"
-        elif second_interest <= 0:
+        elif (
+            new_interest > 0
+            and second_interest > 0
+            and _amounts_within(second_interest, new_interest)
+        ):
             action = "form_second"
+        elif (
+            new_interest > 0
+            and second_interest <= 0
+            and first_interest > 0
+            and not _amounts_within(first_interest, new_interest)
+        ):
+            action = "form_second"
+        elif new_interest > 0 and first_interest > 0 and second_interest > 0:
+            action = "form_skip_interest"
+        elif second_payment <= 0 or first_interest <= 0:
+            action = "form_first"
         else:
             action = "form_skip_interest"
 
