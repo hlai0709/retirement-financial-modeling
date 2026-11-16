@@ -150,10 +150,29 @@ def _parse_rate_over_blocks(text: str) -> tuple[list[tuple[float, int]], list[tu
 
 
 def _brackets_from_blocks(blocks: list[tuple[float, int]]) -> list[list[float | str]]:
-    brackets: list[list[float | str]] = []
-    for rate, ceiling in blocks:
-        brackets.append([float(ceiling), rate])
-    brackets.append(["inf", 0.37])
+    """Turn IRS newsroom thresholds into (ceiling, rate) rows.
+
+    Newsroom copy lists "12% for incomes over $X", where X is the floor of
+    that rate and the ceiling of the prior rate. The 10% figure is already
+    that band's ceiling. The 37% floor must be included so the 35% band has
+    a finite width.
+    """
+    ten_ceilings = [floor for rate, floor in blocks if abs(rate - 0.10) < 1e-9]
+    starts = sorted(
+        ((floor, rate) for rate, floor in blocks if abs(rate - 0.10) >= 1e-9),
+        key=lambda item: (item[0], item[1]),
+    )
+    if not ten_ceilings or not starts:
+        raise ValueError("ordinary brackets missing the 10% ceiling or a higher rate")
+    brackets: list[list[float | str]] = [[float(ten_ceilings[0]), 0.10]]
+    for index, (_floor, rate) in enumerate(starts):
+        if index + 1 < len(starts):
+            ceiling: float | str = float(starts[index + 1][0])
+        else:
+            ceiling = "inf"
+        brackets.append([ceiling, rate])
+    if brackets[-1][1] != 0.37 or brackets[-1][0] != "inf":
+        raise ValueError("ordinary brackets must end at the 37% rate with no ceiling")
     return brackets
 
 
@@ -312,7 +331,9 @@ def _merge_with_prior_year(
 def _parse_newsroom_policy_regex(text: str, *, tax_year: int) -> dict[str, Any]:
     scalars = _parse_standard_deductions(text)
     single_blocks, mfj_blocks = _parse_rate_over_blocks(text)
-    _parse_top_bracket_floors(text)  # validation only
+    top_single, top_mfj = _parse_top_bracket_floors(text)
+    single_blocks.append((0.37, top_single))
+    mfj_blocks.append((0.37, top_mfj))
     amt = _parse_amt(text)
 
     rev_match = re.search(r"Revenue Procedure (\d{4}-\d+)", text, flags=re.IGNORECASE)
@@ -407,6 +428,9 @@ def write_official_policy(payload: dict[str, Any]) -> Path:
         json_dumps(payload) + "\n",
         encoding="utf-8",
     )
+    from config.policy.live import clear_official_policy_cache
+
+    clear_official_policy_cache(tax_year)
     return path
 
 

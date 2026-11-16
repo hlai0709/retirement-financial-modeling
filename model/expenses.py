@@ -26,11 +26,15 @@ def expense_policy_from_params(params: dict[str, Any]) -> ExpensePolicy:
         mode = "flat"
 
     def _pct(key: str, default: float) -> float:
-        raw = params.get(key, default * 100 if default <= 1 else default)
-        if raw in (None, ""):
+        # Snapshot parsing already stores 80% as 0.80 and 160% as 1.60.
+        # Only a raw whole-number percent (above 2, so 80 and 100 still work)
+        # needs to be divided. A blank field keeps the default.
+        if key not in params or params.get(key) in (None, ""):
             return default
-        val = float(raw)
-        return val / 100.0 if val > 1.5 else val
+        val = float(params[key])
+        if val > 2.0:
+            val /= 100.0
+        return val
 
     ltc_inf = params.get("ltc_inflation_rate", 4.5)
     if ltc_inf in (None, ""):

@@ -29,6 +29,18 @@ def library_dir() -> Path:
     return path
 
 
+def stored_path_in_library(stored: str) -> bool:
+    """True only when a stored file sits inside the document library folder."""
+    if not stored:
+        return False
+    try:
+        root = library_dir().resolve()
+        path = Path(stored).expanduser().resolve()
+    except OSError:
+        return False
+    return path == root or root in path.parents
+
+
 def _now_iso() -> str:
     return datetime.now(timezone.utc).isoformat()
 
@@ -311,7 +323,7 @@ def prune_duplicate_entries(
         key = (doc_id, _person_key(entry.get("person")), h)
         if key in seen:
             removed_ids.append(str(entry.get("id") or ""))
-            if stored:
+            if stored_path_in_library(stored):
                 try:
                     Path(stored).unlink(missing_ok=True)
                 except OSError:
@@ -381,7 +393,11 @@ def replace_entry_file(
     except OSError as exc:
         return {"ok": False, "message": f"Could not copy file: {exc}"}
 
-    if old_path and Path(old_path).resolve() != dest.resolve():
+    if (
+        old_path
+        and stored_path_in_library(old_path)
+        and Path(old_path).resolve() != dest.resolve()
+    ):
         try:
             Path(old_path).unlink(missing_ok=True)
         except OSError:
@@ -409,7 +425,7 @@ def remove_entry(snapshot: PlanningSnapshot, entry_id: str) -> dict[str, Any]:
 
     snapshot.document_library = [e for e in entries if str(e.get("id")) != entry_id]
     stored = str(match.get("stored_path") or "")
-    if stored:
+    if stored_path_in_library(stored):
         try:
             Path(stored).unlink(missing_ok=True)
         except OSError:

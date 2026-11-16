@@ -14,6 +14,7 @@ from config.policy.tables import (
 )
 from model.taxes import (
     TaxTable,
+    _taxable_after_deduction,
     additional_standard_deduction_65,
     federal_income_tax,
     federal_ltcg_tax,
@@ -55,17 +56,77 @@ def itemized_inputs_from_params(params: dict) -> ItemizedInputs:
     )
 
 
+def salt_deduction_cap(
+    *,
+    tax_year: int,
+    filing_status: str,
+    magi: float,
+) -> float:
+    """SALT cap for a calendar year.
+
+    TCJA is $10,000 ($5,000 married filing separately). OBBBA raises that to
+    $40,000 ($20,000 MFS) for 2025, plus 1% a year through 2029, then back to
+    $10,000 in 2030. Above the MAGI threshold the cap falls 30 cents per dollar,
+    but not below the $10,000 / $5,000 floor.
+    """
+    status = normalize_filing_status(filing_status)
+    mfs = status == "mfs"
+    floor = 5_000.0 if mfs else SALT_DEDUCTION_CAP_2024
+    if tax_year < 2025 or tax_year >= 2030:
+        return floor
+    growth = 1.01 ** (tax_year - 2025)
+    cap = (20_000.0 if mfs else 40_000.0) * growth
+    threshold = (250_000.0 if mfs else 500_000.0) * growth
+    if magi > threshold:
+        cap = max(floor, cap - 0.30 * (magi - threshold))
+    return cap
+
+
 def compute_itemized_deduction(
     inputs: ItemizedInputs,
     *,
     agi: float,
+    filing_status: str = "mfj",
+    tax_year: int = 2024,
 ) -> tuple[float, float]:
     """Return (total itemized deduction, SALT amount included after cap)."""
-    salt = min(max(0.0, inputs.salt), SALT_DEDUCTION_CAP_2024)
+    cap = salt_deduction_cap(tax_year=tax_year, filing_status=filing_status, magi=agi)
+    salt = min(max(0.0, inputs.salt), cap)
     mortgage = max(0.0, inputs.mortgage_interest)
     charitable = max(0.0, inputs.charitable)
     medical = max(0.0, inputs.medical - agi * MEDICAL_AGI_FLOOR_PCT)
     return salt + mortgage + charitable + medical, salt
+
+
+def itemized_for_year(
+    itemized: ItemizedInputs,
+    persons: dict,
+    year: int,
+) -> ItemizedInputs:
+    """Drop mortgage interest once every known payoff year has passed.
+
+    One household interest figure cannot be split across loans, so it stays
+    until the latest payoff year and then goes to zero. A blank payoff year
+    does not turn the deduction off.
+    """
+    from dataclasses import replace
+
+    if itemized.mortgage_interest <= 0:
+        return itemized
+    payoffs: list[int] = []
+    for person in persons.values():
+        raw = person.get("mortgage_payoff_year")
+        if raw in (None, ""):
+            continue
+        try:
+            payoff = int(float(str(raw).replace(",", "").replace("$", "")))
+        except (TypeError, ValueError):
+            continue
+        if 1900 <= payoff <= 2100:
+            payoffs.append(payoff)
+    if payoffs and year > max(payoffs):
+        return replace(itemized, mortgage_interest=0.0)
+    return itemized
 
 
 def _amt_exemption_and_phaseout(
@@ -98,14 +159,20 @@ def compute_amti(
     *,
     ordinary_income: float,
     ltcg: float,
-    salt_deducted: float,
+    itemized_deduction: float = 0.0,
+    salt_deducted: float = 0.0,
     deduction_method: str,
 ) -> float:
-    """Simplified AMTI with SALT add-back when itemizing."""
-    amti = max(0.0, ordinary_income) + max(0.0, ltcg)
-    if deduction_method == "itemized" and salt_deducted > 0:
-        amti += salt_deducted
-    return amti
+    """AMTI before the AMT exemption.
+
+    The standard deduction is not subtracted. Itemized deductions other than
+    SALT (mortgage interest, charity, deductible medical) do reduce AMTI.
+    """
+    income = max(0.0, ordinary_income) + max(0.0, ltcg)
+    if deduction_method != "itemized":
+        return income
+    non_salt = max(0.0, itemized_deduction - max(0.0, salt_deducted))
+    return max(0.0, income - non_salt)
 
 
 def compute_amt_liability(
@@ -138,6 +205,7 @@ def federal_tax_cpa_precision(
     inflation_factor: float = 1.0,
     itemized: ItemizedInputs,
     agi: float,
+    tax_year: int = 2024,
 ) -> CpaFederalTaxResult:
     """Federal tax with optimal deduction and AMT (max of regular vs AMT)."""
     extra_sd = additional_standard_deduction_65(
@@ -146,7 +214,12 @@ def federal_tax_cpa_precision(
         inflation_factor=inflation_factor,
     )
     standard_deduction = table.standard_deduction + extra_sd
-    itemized_deduction, salt_used = compute_itemized_deduction(itemized, agi=agi)
+    itemized_deduction, salt_used = compute_itemized_deduction(
+        itemized,
+        agi=agi,
+        filing_status=filing_status,
+        tax_year=tax_year,
+    )
 
     if itemized_deduction > standard_deduction:
         deduction = itemized_deduction
@@ -156,21 +229,17 @@ def federal_tax_cpa_precision(
         method = "standard"
         salt_used = 0.0
 
-    ordinary_taxable = max(0.0, ordinary_income - deduction)
-    if ltcg <= 0:
-        ord_tax = federal_income_tax(ordinary_taxable, table)
+    ordinary_taxable, ltcg_taxable = _taxable_after_deduction(
+        ordinary_income,
+        ltcg,
+        deduction,
+    )
+    ord_tax = federal_income_tax(ordinary_taxable, table) if ordinary_taxable > 0 else 0.0
+    if ltcg_taxable <= 0:
         ltcg_tax = 0.0
-    elif ordinary_taxable <= 0:
-        ord_tax = 0.0
-        ltcg_tax = federal_ltcg_tax(
-            ltcg,
-            ordinary_taxable_income=0.0,
-            ltcg_tiers=table.ltcg_tiers,
-        )
     else:
-        ord_tax = federal_income_tax(ordinary_taxable, table)
         ltcg_tax = federal_ltcg_tax(
-            ltcg,
+            ltcg_taxable,
             ordinary_taxable_income=ordinary_taxable,
             ltcg_tiers=table.ltcg_tiers,
         )
@@ -179,6 +248,7 @@ def federal_tax_cpa_precision(
     amti = compute_amti(
         ordinary_income=ordinary_income,
         ltcg=ltcg,
+        itemized_deduction=itemized_deduction,
         salt_deducted=salt_used,
         deduction_method=method,
     )

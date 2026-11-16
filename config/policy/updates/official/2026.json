@@ -8,80 +8,38 @@
     "mfj_standard_deduction": 32200,
     "single_standard_deduction": 16100,
     "hoh_standard_deduction": 24150,
-    "mfj_ss_base": 35288,
-    "mfj_ss_tier2": 48520,
-    "single_ss_base": 27569,
-    "single_ss_tier2": 37494,
+    "mfj_ss_base": 32000,
+    "mfj_ss_tier2": 44000,
+    "single_ss_base": 25000,
+    "single_ss_tier2": 34000,
     "fpl_base": 16608,
     "fpl_per_additional_person": 5932,
     "medicare_part_b_monthly": 192.65,
     "medicare_part_d_monthly": 61.2,
     "mfj_additional_sd_65": 1709,
     "single_additional_sd_65": 2150,
-    "niit_mfj_threshold": 275685,
-    "niit_single_threshold": 220547,
-    "niit_mfs_threshold": 137843
+    "niit_mfj_threshold": 250000,
+    "niit_single_threshold": 200000,
+    "niit_mfs_threshold": 125000
   },
   "brackets": {
     "single": [
-      [
-        12400.0,
-        0.1
-      ],
-      [
-        12400.0,
-        0.12
-      ],
-      [
-        50400.0,
-        0.22
-      ],
-      [
-        105700.0,
-        0.24
-      ],
-      [
-        201775.0,
-        0.32
-      ],
-      [
-        256225.0,
-        0.35
-      ],
-      [
-        "inf",
-        0.37
-      ]
+      [12400.0, 0.1],
+      [50400.0, 0.12],
+      [105700.0, 0.22],
+      [201775.0, 0.24],
+      [256225.0, 0.32],
+      [640600.0, 0.35],
+      ["inf", 0.37]
     ],
     "mfj": [
-      [
-        24800.0,
-        0.1
-      ],
-      [
-        24800.0,
-        0.12
-      ],
-      [
-        100800.0,
-        0.22
-      ],
-      [
-        211400.0,
-        0.24
-      ],
-      [
-        403550.0,
-        0.32
-      ],
-      [
-        512450.0,
-        0.35
-      ],
-      [
-        "inf",
-        0.37
-      ]
+      [24800.0, 0.1],
+      [100800.0, 0.12],
+      [211400.0, 0.22],
+      [403550.0, 0.24],
+      [512450.0, 0.32],
+      [768700.0, 0.35],
+      ["inf", 0.37]
     ],
     "hoh": [
       [

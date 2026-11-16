@@ -475,6 +475,13 @@ def _sum_additive_income_if_needed(
     return out
 
 
+def _amounts_within(existing: float, new: float, tolerance: float = 0.12) -> bool:
+    """True when a new import looks like a refresh of the same bill, not a second one."""
+    if existing <= 0 or new <= 0:
+        return False
+    return abs(existing - new) / max(existing, new) <= tolerance
+
+
 def _stack_property_tax_if_needed(
     snapshot: PlanningSnapshot,
     fields: list,
@@ -521,6 +528,9 @@ def _stack_property_tax_if_needed(
                 parse_field_value(field_def, str(getattr(item, "raw_value", "") or "0"))
             )
         except Exception:
+            out.append(item)
+            continue
+        if _amounts_within(existing, new_val):
             out.append(item)
             continue
         total = existing + new_val
@@ -571,9 +581,34 @@ def _stack_mortgage_if_needed(
     except Exception:
         existing_annual = 0.0
     src = str(snapshot.get_source(person_scope, "mortgage_annual") or "").lower()
-    stack_annual = existing_annual > 0 and (
+    looks_imported = (
         "import" in src or "mortgage" in src or "1098" in src or "statement" in src
     )
+    # A 1098 is interest for a loan you already have, not a second payment.
+    # A statement within ~12% replaces that loan. A clearly different payment stacks.
+    refresh_same_loan = False
+    stack_annual = False
+    if existing_annual > 0 and looks_imported and document_id == "mortgage_statement":
+        proposed = 0.0
+        for item in fields:
+            if getattr(item, "field_key", None) != "mortgage_annual":
+                continue
+            try:
+                proposed = float(
+                    parse_field_value(
+                        annual_field,
+                        str(getattr(item, "raw_value", "") or "0"),
+                    )
+                )
+            except Exception:
+                proposed = 0.0
+            break
+        if proposed > 0 and _amounts_within(existing_annual, proposed):
+            refresh_same_loan = True
+        elif proposed > 0:
+            stack_annual = True
+    elif existing_annual > 0 and document_id == "form_1098":
+        refresh_same_loan = True
 
     existing_payoff = None
     if payoff_field is not None:
@@ -588,6 +623,12 @@ def _stack_mortgage_if_needed(
     out = []
     for item in fields:
         key = getattr(item, "field_key", None)
+        if key == "mortgage_annual" and document_id == "form_1098" and existing_annual > 0:
+            # Keep the payment already on the plan. 1098 does not add a loan.
+            continue
+        if key == "mortgage_payoff_year" and refresh_same_loan:
+            out.append(item)
+            continue
         if key == "mortgage_annual" and stack_annual and annual_field is not None:
             try:
                 new_val = float(
@@ -613,7 +654,12 @@ def _stack_mortgage_if_needed(
                 )
             )
             continue
-        if key == "mortgage_payoff_year" and payoff_field is not None and existing_payoff:
+        if (
+            key == "mortgage_payoff_year"
+            and payoff_field is not None
+            and existing_payoff
+            and stack_annual
+        ):
             try:
                 new_year = int(
                     parse_field_value(

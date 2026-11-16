@@ -192,20 +192,17 @@ def owner_totals_from_line_items(
             in_recurring_cat = (
                 cat in BASE_RECURRING_CATEGORIES or builder_cat in BASE_RECURRING_CATEGORIES
             )
-            # Lifestyle: use annual averages of checked lines
-            # Recurring bills: only recurring-type rows in those categories
-            if in_lifestyle:
-                pass
-            elif in_recurring_cat and expense_type == "recurring":
-                pass
-            elif in_recurring_cat and expense_type != "recurring":
-                # Allow checked one-off in a recurring category only if user forced include
-                # — still skip for base living (keeps "select all" from inflating bills)
+            # Healthcare has its own premium fields. One-off travel is not a bill.
+            # A checked insurance or utility row still counts when the detector
+            # called it variable (annual policies are not monthly).
+            if builder_cat == "healthcare" or cat == "healthcare":
                 continue
-            else:
-                # Not in the base recipe (e.g. unmapped)
-                if builder_cat not in BASE_EXPENSE_CATEGORIES and cat not in BASE_EXPENSE_CATEGORIES:
-                    continue
+            if (builder_cat == "travel" or cat == "travel") and expense_type != "recurring":
+                continue
+            if in_lifestyle or in_recurring_cat:
+                pass
+            elif builder_cat not in BASE_EXPENSE_CATEGORIES and cat not in BASE_EXPENSE_CATEGORIES:
+                continue
         annual = float(row.get("annual_amount", 0))
         included_annual += annual
         owner = str(row.get("owner", ""))
@@ -238,9 +235,11 @@ def base_living_category_breakdown(rows: list[dict[str, Any]]) -> dict[str, floa
         expense_type = str(row.get("expense_type") or "").lower()
         in_lifestyle = builder_cat in BASE_LIFESTYLE_CATEGORIES
         in_recurring_cat = builder_cat in BASE_RECURRING_CATEGORIES
-        if in_lifestyle:
-            key = builder_cat
-        elif in_recurring_cat and expense_type == "recurring":
+        if builder_cat == "healthcare":
+            continue
+        if builder_cat == "travel" and expense_type != "recurring":
+            continue
+        if in_lifestyle or in_recurring_cat:
             key = builder_cat
         else:
             continue

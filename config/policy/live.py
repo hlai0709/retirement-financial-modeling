@@ -9,11 +9,36 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+from config.policy.tables import (
+    MFJ_SS_BASE_2024,
+    MFJ_SS_TIER2_2024,
+    NIIT_MFJ_THRESHOLD_2024,
+    NIIT_MFS_THRESHOLD_2024,
+    NIIT_SINGLE_THRESHOLD_2024,
+    SINGLE_SS_BASE_2024,
+    SINGLE_SS_TIER2_2024,
+)
+
 POLICY_PKG_DIR = Path(__file__).resolve().parent
 UPDATES_DIR = POLICY_PKG_DIR / "updates"
 OFFICIAL_DIR = UPDATES_DIR / "official"
 ACTIVE_POINTER = UPDATES_DIR / "policy_active.json"
 MANIFEST_PATH = UPDATES_DIR / "manifest.json"
+
+# Social Security provisional-income bases and NIIT thresholds are statutory
+# and are not inflation-indexed. Official JSON copies that grew them are ignored.
+_UNINDEXED_THRESHOLDS = {
+    "mfj_ss_base": MFJ_SS_BASE_2024,
+    "mfj_ss_tier2": MFJ_SS_TIER2_2024,
+    "single_ss_base": SINGLE_SS_BASE_2024,
+    "single_ss_tier2": SINGLE_SS_TIER2_2024,
+    "niit_mfj_threshold": NIIT_MFJ_THRESHOLD_2024,
+    "niit_single_threshold": NIIT_SINGLE_THRESHOLD_2024,
+    "niit_mfs_threshold": NIIT_MFS_THRESHOLD_2024,
+}
+
+_policy_json_cache: dict[int, dict[str, Any]] = {}
+_auto_pull_attempted = False
 
 
 @dataclass(frozen=True)
@@ -56,11 +81,25 @@ def official_policy_path(tax_year: int) -> Path:
     return OFFICIAL_DIR / f"{tax_year}.json"
 
 
+def clear_official_policy_cache(tax_year: int | None = None) -> None:
+    """Drop cached official JSON so a fresh write is visible in this process."""
+    if tax_year is None:
+        _policy_json_cache.clear()
+        return
+    _policy_json_cache.pop(int(tax_year), None)
+
+
 def load_official_policy(tax_year: int) -> dict[str, Any]:
-    path = official_policy_path(tax_year)
+    year = int(tax_year)
+    cached = _policy_json_cache.get(year)
+    if cached is not None:
+        return cached
+    path = official_policy_path(year)
     if not path.exists():
-        raise FileNotFoundError(f"No official policy file for tax year {tax_year}: {path}")
-    return json.loads(path.read_text(encoding="utf-8"))
+        raise FileNotFoundError(f"No official policy file for tax year {year}: {path}")
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    _policy_json_cache[year] = payload
+    return payload
 
 
 def get_active_policy_meta() -> ActivePolicyMeta | None:
@@ -100,14 +139,25 @@ def _policy_fetch_age_days(policy: dict[str, Any]) -> int | None:
 
 
 def maybe_auto_pull_latest() -> ActivePolicyMeta | None:
-    """Fetch manifest default_year from IRS when auto-pull is enabled and data is stale."""
+    """Fetch manifest default_year from IRS when auto-pull is enabled and data is stale.
+
+    One attempt per process. A projection asks for tax tables many times; a stale
+    ``fetched_at`` must not hit the IRS on every year.
+    """
+    global _auto_pull_attempted
+
     manifest = load_manifest()
     if not _auto_pull_enabled(manifest):
         return None
 
+    force_pull = os.getenv("POLICY_FORCE_PULL", "").strip().lower() in {"1", "true", "yes"}
+    if _auto_pull_attempted and not force_pull:
+        return None
+    if not force_pull:
+        _auto_pull_attempted = True
+
     default_year = int(manifest.get("default_year", 2024))
     max_age_days = int(manifest.get("auto_pull_max_age_days", 30))
-    force_pull = os.getenv("POLICY_FORCE_PULL", "").strip().lower() in {"1", "true", "yes"}
     policy_path = official_policy_path(default_year)
 
     if policy_path.exists() and not force_pull:
@@ -195,10 +245,10 @@ def policy_tables_for_year(
         "mfj_brackets": scale_brackets("mfj"),
         "single_brackets": scale_brackets("single"),
         "hoh_brackets": scale_brackets("hoh"),
-        "mfj_ss_base": scale(scalars.get("mfj_ss_base", 32_000)),
-        "mfj_ss_tier2": scale(scalars.get("mfj_ss_tier2", 44_000)),
-        "single_ss_base": scale(scalars.get("single_ss_base", 25_000)),
-        "single_ss_tier2": scale(scalars.get("single_ss_tier2", 34_000)),
+        "mfj_ss_base": _UNINDEXED_THRESHOLDS["mfj_ss_base"],
+        "mfj_ss_tier2": _UNINDEXED_THRESHOLDS["mfj_ss_tier2"],
+        "single_ss_base": _UNINDEXED_THRESHOLDS["single_ss_base"],
+        "single_ss_tier2": _UNINDEXED_THRESHOLDS["single_ss_tier2"],
         "fpl_base": scale(scalars.get("fpl_base", 15_060)),
         "fpl_per_additional_person": scale(scalars.get("fpl_per_additional_person", 5_380)),
         "medicare_part_b_monthly": scale(scalars.get("medicare_part_b_monthly", 174.70)),
@@ -208,9 +258,9 @@ def policy_tables_for_year(
         "mfj_ltcg_tiers": scale_brackets("mfj_ltcg"),
         "single_ltcg_tiers": scale_brackets("single_ltcg"),
         "hoh_ltcg_tiers": scale_brackets("hoh_ltcg"),
-        "niit_mfj_threshold": scale(scalars.get("niit_mfj_threshold", 250_000)),
-        "niit_single_threshold": scale(scalars.get("niit_single_threshold", 200_000)),
-        "niit_mfs_threshold": scale(scalars.get("niit_mfs_threshold", 125_000)),
+        "niit_mfj_threshold": _UNINDEXED_THRESHOLDS["niit_mfj_threshold"],
+        "niit_single_threshold": _UNINDEXED_THRESHOLDS["niit_single_threshold"],
+        "niit_mfs_threshold": _UNINDEXED_THRESHOLDS["niit_mfs_threshold"],
         "amt_exemption_mfj": scale(amt.get("exemption_mfj", 126_500)),
         "amt_exemption_single": scale(amt.get("exemption_single", 85_700)),
         "amt_exemption_mfs": scale(amt.get("exemption_mfs", 43_350)),

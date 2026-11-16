@@ -1,26 +1,26 @@
 {
   "tax_year": 2025,
   "source": "IRS Rev. Proc. 2024-40 (rp-24-40)",
-  "fetched_at": "2026-06-21T20:14:41+00:00",
+  "fetched_at": "2026-11-16T04:38:57+00:00",
   "fetch_method": "irs_newsroom_html",
   "fetch_notes": "Federal ordinary brackets and standard deductions parsed from IRS newsroom. HOH brackets, LTCG tiers, SS thresholds, Medicare, and FPL scaled from prior tax year.",
   "scalars": {
     "mfj_standard_deduction": 30000,
     "single_standard_deduction": 15000,
     "hoh_standard_deduction": 22500,
-    "mfj_ss_base": 32877,
-    "mfj_ss_tier2": 45205,
-    "single_ss_base": 25685,
-    "single_ss_tier2": 34932,
+    "mfj_ss_base": 32000,
+    "mfj_ss_tier2": 44000,
+    "single_ss_base": 25000,
+    "single_ss_tier2": 34000,
     "fpl_base": 15473,
     "fpl_per_additional_person": 5527,
     "medicare_part_b_monthly": 179.49,
     "medicare_part_d_monthly": 57.02,
     "mfj_additional_sd_65": 1592,
     "single_additional_sd_65": 2003,
-    "niit_mfj_threshold": 256849,
-    "niit_single_threshold": 205479,
-    "niit_mfs_threshold": 128425
+    "niit_mfj_threshold": 250000,
+    "niit_single_threshold": 200000,
+    "niit_mfs_threshold": 125000
   },
   "brackets": {
     "single": [
@@ -29,23 +29,23 @@
         0.1
       ],
       [
-        11925.0,
+        48475.0,
         0.12
       ],
       [
-        48475.0,
+        103350.0,
         0.22
       ],
       [
-        103350.0,
+        197300.0,
         0.24
       ],
       [
-        197300.0,
+        250525.0,
         0.32
       ],
       [
-        250525.0,
+        626350.0,
         0.35
       ],
       [
@@ -59,23 +59,23 @@
         0.1
       ],
       [
-        23850.0,
+        96950.0,
         0.12
       ],
       [
-        96950.0,
+        206700.0,
         0.22
       ],
       [
-        206700.0,
+        394600.0,
         0.24
       ],
       [
-        394600.0,
+        501050.0,
         0.32
       ],
       [
-        501050.0,
+        751600.0,
         0.35
       ],
       [

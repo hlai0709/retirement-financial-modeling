@@ -234,10 +234,10 @@ def _embedded_policy_year(
         mfj_brackets=_inflate_brackets(MFJ_BRACKETS_2024, factor),
         single_brackets=_inflate_brackets(SINGLE_BRACKETS_2024, factor),
         hoh_brackets=_inflate_brackets(HOH_BRACKETS_2024, factor),
-        mfj_ss_base=MFJ_SS_BASE_2024 * factor,
-        mfj_ss_tier2=MFJ_SS_TIER2_2024 * factor,
-        single_ss_base=SINGLE_SS_BASE_2024 * factor,
-        single_ss_tier2=SINGLE_SS_TIER2_2024 * factor,
+        mfj_ss_base=MFJ_SS_BASE_2024,
+        mfj_ss_tier2=MFJ_SS_TIER2_2024,
+        single_ss_base=SINGLE_SS_BASE_2024,
+        single_ss_tier2=SINGLE_SS_TIER2_2024,
         fpl_base=FPL_BASE_2024 * factor,
         fpl_per_additional_person=FPL_PER_ADDITIONAL_PERSON_2024 * factor,
         aca_applicable_pct_tiers=ACA_APPLICABLE_PCT_TIERS,
@@ -250,9 +250,9 @@ def _embedded_policy_year(
         mfj_ltcg_tiers=_inflate_brackets(MFJ_LTCG_TIERS_2024, factor),
         single_ltcg_tiers=_inflate_brackets(SINGLE_LTCG_TIERS_2024, factor),
         hoh_ltcg_tiers=_inflate_brackets(HOH_LTCG_TIERS_2024, factor),
-        niit_mfj_threshold=NIIT_MFJ_THRESHOLD_2024 * factor,
-        niit_single_threshold=NIIT_SINGLE_THRESHOLD_2024 * factor,
-        niit_mfs_threshold=NIIT_MFS_THRESHOLD_2024 * factor,
+        niit_mfj_threshold=NIIT_MFJ_THRESHOLD_2024,
+        niit_single_threshold=NIIT_SINGLE_THRESHOLD_2024,
+        niit_mfs_threshold=NIIT_MFS_THRESHOLD_2024,
     )
 
 

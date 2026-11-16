@@ -379,7 +379,7 @@ _MONEY_AMT = r"(\d{1,3}(?:,\d{3})+\.\d{2}|\d{4,}\.\d{2}|\d{1,3}\.\d{2})"
 _PAYOFF_YEAR = re.compile(
     r"(?:matur(?:ity|es)\s*(?:date|year)?|final\s+(?:payment|due)|"
     r"loan\s+(?:matures|ends)|paid\s+off\s+(?:in|by|year))"
-    r"[^\n\d]{0,40}?(20[2-4]\d)\b",
+    r"[^\n\d]{0,40}?(20\d{2})\b",
     re.IGNORECASE,
 )
 
@@ -473,12 +473,15 @@ _RATE_PATTERNS = (
 )
 
 _AS_OF_DATE = re.compile(
-    r"(?:payment\s*due\s*date|due\s*date|statement\s*date)[^\d]{0,24}"
-    r"(0?[1-9]|1[0-2])[\/\-.](0?[1-9]|[12]\d|3[01])[\/\-.]?"
-    r"(20[2-4]\d|\d{2})\b",
+    r"(?:payment\s*due\s*date|due\s*date|statement\s*date|as\s*of)[^\d]{0,24}"
+    r"(0?[1-9]|1[0-2])[\/\-.](0?[1-9]|[12]\d|3[01])[\/\-.]"
+    r"(20\d{2}|\d{2})\b",
     re.IGNORECASE,
 )
-_AS_OF_YEAR = re.compile(r"\bYEAR\s*:\s*(20[2-4]\d)\b", re.IGNORECASE)
+_AS_OF_YEAR = re.compile(
+    r"\b(?:YEAR|tax\s*year|calendar\s*year)\s*:?\s*(20\d{2})\b",
+    re.IGNORECASE,
+)
 
 
 def _first_amount(text: str, patterns: tuple[re.Pattern[str], ...]) -> float | None:
@@ -518,7 +521,8 @@ def _mortgage_monthly_payment(text: str) -> float | None:
 
 
 def _mortgage_monthly_pi(text: str, *, total_payment: float | None = None) -> float | None:
-    """Principal & interest only — required for amortization (exclude escrow)."""
+    """Principal & interest only. Never fall back to a total that includes escrow."""
+    _ = total_payment
     pi = _first_amount(
         text,
         (
@@ -565,7 +569,7 @@ def _mortgage_monthly_pi(text: str, *, total_payment: float | None = None) -> fl
         intr = _parse_amount(m_int.group(1))
     if prin and intr and 50 <= prin <= 40_000 and 50 <= intr <= 40_000:
         return prin + intr
-    return total_payment
+    return None
 
 
 def _mortgage_interest_paid(text: str) -> float | None:
@@ -617,26 +621,33 @@ def _mortgage_interest_rate_pct(text: str) -> float | None:
     return None
 
 
-def _statement_as_of(text: str) -> tuple[int, int]:
-    """Best-effort (year, month) for amortization clock."""
-    from datetime import date
+def _statement_as_of(text: str, *, january_of_tax_year: bool = False) -> tuple[int, int] | None:
+    """(year, month) for the amortization clock. None when the document has no date.
 
-    today = date.today()
+    Form 1098 Box 2 is the balance at the start of the tax year, so that form
+    amortizes from January of the printed year rather than today's date.
+    """
+    if january_of_tax_year:
+        year_match = _AS_OF_YEAR.search(text)
+        if year_match:
+            year = int(year_match.group(1))
+            if 2020 <= year <= 2099:
+                return year, 1
+        return None
     match = _AS_OF_DATE.search(text)
     if match:
         month = int(match.group(1))
-        year_raw = match.group(3)
-        year = int(year_raw)
+        year = int(match.group(3))
         if year < 100:
             year += 2000
-        if 2020 <= year <= 2040:
+        if 2020 <= year <= 2099:
             return year, month
     year_match = _AS_OF_YEAR.search(text)
     if year_match:
         year = int(year_match.group(1))
-        if 2020 <= year <= 2040:
-            return year, today.month
-    return today.year, today.month
+        if 2020 <= year <= 2099:
+            return year, 1
+    return None
 
 
 def _add_payoff_year(
@@ -648,6 +659,8 @@ def _add_payoff_year(
     principal: float | None = None,
     monthly_pi: float | None = None,
     rate_pct: float | None = None,
+    january_of_tax_year: bool = False,
+    payoff_confidence: str = "high",
 ) -> None:
     if "mortgage_payoff_year" in keys:
         return
@@ -660,7 +673,7 @@ def _add_payoff_year(
     year_match = _PAYOFF_YEAR.search(text)
     if year_match:
         year = int(year_match.group(1))
-        if 2028 <= year <= 2080:
+        if 2020 <= year <= 2099:
             out.append(
                 ExtractedFieldSuggestion(
                     field_key="mortgage_payoff_year",
@@ -680,7 +693,10 @@ def _add_payoff_year(
     if principal and monthly_pi and rate_pct is not None:
         from model.mortgage_amort import amortization_summary
 
-        as_of_year, as_of_month = _statement_as_of(text)
+        as_of = _statement_as_of(text, january_of_tax_year=january_of_tax_year)
+        if as_of is None:
+            return
+        as_of_year, as_of_month = as_of
         summary = amortization_summary(
             principal,
             monthly_pi,
@@ -697,7 +713,7 @@ def _add_payoff_year(
                     label=field.label,
                     raw_value=format_field_value(field, year),
                     display_value=str(year),
-                    confidence="high",
+                    confidence=payoff_confidence,
                     source_quote=(
                         f"Computed maturity {year} from balance ${principal:,.0f}, "
                         f"P&I ${monthly_pi:,.2f}/mo, rate {rate_pct:g}% "
@@ -714,8 +730,16 @@ def _extract_mortgage_common(
     *,
     person: str | None,
     interest_quote: str,
+    interest_is_annual: bool,
 ) -> list[ExtractedFieldSuggestion]:
-    """Shared 1098 / lender-statement mortgage mapping + amortization."""
+    """Shared 1098 / lender-statement mortgage mapping + amortization.
+
+    ``mortgage_annual`` is principal and interest times 12 when that split is
+    known, so the payment can stop at payoff without taking escrow with it.
+    A total payment that still includes escrow is kept only at medium confidence.
+    Year-to-date statement interest is not a full-year deduction and is not
+    copied into the annual payment.
+    """
     out: list[ExtractedFieldSuggestion] = []
     keys: set[str] = set()
 
@@ -733,42 +757,41 @@ def _extract_mortgage_common(
                 interest,
                 person=None,
                 quote=interest_quote,
-                confidence="high",
+                confidence="high" if interest_is_annual else "low",
             )
         )
 
     principal = _mortgage_principal(text)
     monthly_total = _mortgage_monthly_payment(text)
-    monthly_pi = _mortgage_monthly_pi(text, total_payment=monthly_total)
+    monthly_pi = _mortgage_monthly_pi(text)
     rate_pct = _mortgage_interest_rate_pct(text)
-    # Cash-flow expense prefers total payment; fall back to P&I if escrow not shown
-    monthly_for_expense = monthly_total or monthly_pi
 
-    if monthly_for_expense:
-        annual = round(monthly_for_expense * 12.0, 2)
+    if monthly_pi:
+        annual = round(monthly_pi * 12.0, 2)
         _add(
             _money_suggestion(
                 "mortgage_annual",
                 annual,
                 person=person,
-                quote=f"Monthly payment ${monthly_for_expense:,.2f} × 12 = ${annual:,.0f}/yr",
+                quote=(
+                    f"Principal and interest ${monthly_pi:,.2f}/mo × 12 "
+                    f"= ${annual:,.0f}/yr (escrow excluded)"
+                ),
                 confidence="high",
             )
         )
-    elif interest:
-        quote = (
-            f"Interest ${interest:,.0f} (interest only — enter full annual P&I; "
-            f"principal ${principal:,.0f})"
-            if principal
-            else f"Interest ${interest:,.0f} (interest only — enter full annual payment)"
-        )
+    elif monthly_total:
+        annual = round(monthly_total * 12.0, 2)
         _add(
             _money_suggestion(
                 "mortgage_annual",
-                interest,
+                annual,
                 person=person,
-                quote=quote,
-                confidence="low",
+                quote=(
+                    f"Total payment ${monthly_total:,.2f}/mo × 12 = ${annual:,.0f}/yr. "
+                    "This includes escrow, so do not also add a property-tax bill."
+                ),
+                confidence="medium",
             )
         )
 
@@ -780,16 +803,19 @@ def _extract_mortgage_common(
         principal=principal,
         monthly_pi=monthly_pi,
         rate_pct=rate_pct,
+        january_of_tax_year=interest_is_annual,
+        payoff_confidence="high" if monthly_pi else "medium",
     )
     return out
 
 
 def extract_1098_suggestions(text: str, *, person: str | None = "self") -> list[ExtractedFieldSuggestion]:
-    """IRS Form 1098 — mortgage interest (+ payment / amortize when statement page included)."""
+    """IRS Form 1098 — annual mortgage interest, plus P&I when the form shows it."""
     return _extract_mortgage_common(
         text,
         person=person,
-        interest_quote="Form 1098 / statement — mortgage interest",
+        interest_quote="Form 1098 Box 1 — mortgage interest for the tax year",
+        interest_is_annual=True,
     )
 
 
@@ -800,20 +826,23 @@ def extract_mortgage_statement_suggestions(
     return _extract_mortgage_common(
         text,
         person=person,
-        interest_quote="Mortgage statement interest (YTD/annual)",
+        interest_quote="Mortgage statement year-to-date interest (not a full year)",
+        interest_is_annual=False,
     )
 
 
-_PROPERTY_TAX_AMOUNT_PATTERNS = (
+_PROPERTY_TAX_TOTAL_PATTERNS = (
     re.compile(
-        r"(?:total\s+(?:amount\s+)?due|amount\s+due|total\s+tax(?:es)?\s+due|"
-        r"tax\s+amount|total\s+property\s+tax(?:es)?|annual\s+tax|"
+        r"(?:total\s+(?:amount\s+)?due|total\s+tax(?:es)?\s+due|"
+        r"total\s+property\s+tax(?:es)?|annual\s+tax|"
         r"current\s+tax\s+levy|total\s+levy)"
         r"[^\n\d$]{0,40}\$?\s*" + _MONEY_AMT,
         re.IGNORECASE,
     ),
+)
+_PROPERTY_TAX_INSTALLMENT_PATTERNS = (
     re.compile(
-        r"(?:first\s+installment|1st\s+installment|installment\s*1)"
+        r"(?:(?:first|1st|second|2nd)\s+installment|installment\s*1)"
         r"[^\n\d$]{0,40}\$?\s*" + _MONEY_AMT,
         re.IGNORECASE,
     ),
@@ -823,43 +852,35 @@ _PROPERTY_TAX_AMOUNT_PATTERNS = (
 def extract_property_tax_bill_suggestions(
     text: str, *, person: str | None = "self"
 ) -> list[ExtractedFieldSuggestion]:
-    """County / city property tax bill — annual (or installment × 2) cash tax."""
+    """County / city property tax bill — annual total, or one installment × 2."""
     out: list[ExtractedFieldSuggestion] = []
-    annual = _first_amount(text, _PROPERTY_TAX_AMOUNT_PATTERNS)
-    quote = "Property tax bill — amount due"
-    # CA-style: two equal installments → annualize one installment × 2
-    if annual and 50 <= annual <= 500_000:
-        low = text.lower()
-        if "installment" in low and "total" not in (quote.lower()):
-            # If we matched an installment line specifically, double it
-            if re.search(
-                r"(?:first|1st|second|2nd)\s+installment[^\n\d$]{0,40}" + _MONEY_AMT,
-                text,
-                re.IGNORECASE,
-            ):
-                # Prefer explicit annual/total when also present
-                total = _label_amount(
-                    text,
-                    "Total Amount Due",
-                    "Total Tax Due",
-                    "Total Taxes Due",
-                    "Annual Tax",
-                )
-                if total and total >= annual:
-                    annual = total
-                    quote = "Property tax bill — total / annual amount"
-                else:
-                    annual = round(annual * 2.0, 2)
-                    quote = "Property tax bill — installment × 2 (annualized)"
-        s = _money_suggestion(
-            "property_tax_annual",
-            annual,
-            person=person,
-            quote=quote,
-            confidence="high",
+    total = _first_amount(text, _PROPERTY_TAX_TOTAL_PATTERNS)
+    if total is None:
+        total = _label_amount(
+            text,
+            "Total Amount Due",
+            "Total Tax Due",
+            "Total Taxes Due",
+            "Annual Tax",
         )
-        if s:
-            out.append(s)
+    if total and 50 <= total <= 500_000:
+        annual = total
+        quote = "Property tax bill — total / annual amount"
+    else:
+        installment = _first_amount(text, _PROPERTY_TAX_INSTALLMENT_PATTERNS)
+        if not installment or not (50 <= installment <= 250_000):
+            return out
+        annual = round(installment * 2.0, 2)
+        quote = "Property tax bill — installment × 2 (annualized)"
+    suggestion = _money_suggestion(
+        "property_tax_annual",
+        annual,
+        person=person,
+        quote=quote,
+        confidence="high" if "total" in quote else "medium",
+    )
+    if suggestion:
+        out.append(suggestion)
     return out
 
 

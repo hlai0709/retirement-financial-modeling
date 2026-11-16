@@ -52,8 +52,8 @@ def _validate_params(params):
 
     for pct_name in ("roth_portfolio_pct", "contribution_roth_pct"):
         rate = params.get(pct_name, 0) or 0
-        if rate < 0 or rate >= 1:
-            raise ValueError(f"{pct_name} must be between 0% and 100% (exclusive)")
+        if rate < 0 or rate > 1:
+            raise ValueError(f"{pct_name} must be between 0% and 100%")
 
     ss_tax = params.get("ss_taxable_fraction", 0.50) or 0
     if ss_tax < 0 or ss_tax > MAX_SS_TAXABLE_FRACTION:

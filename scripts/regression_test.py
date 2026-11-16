@@ -288,6 +288,447 @@ def run_regression() -> RegressionReport:
 
     _run_check(report, "Core", "Module imports", check_core_imports)
 
+    def check_federal_brackets_are_not_shifted():
+        from config.policy.irs_fetcher import _brackets_from_blocks
+        from model.taxes import federal_income_tax, tax_table_for_filing_status
+
+        parsed = _brackets_from_blocks(
+            [
+                (0.10, 23_850),
+                (0.12, 23_850),
+                (0.22, 96_950),
+                (0.24, 206_700),
+                (0.32, 394_600),
+                (0.35, 501_050),
+                (0.37, 751_600),
+            ]
+        )
+        assert parsed[0] == [23_850.0, 0.10]
+        assert parsed[1] == [96_950.0, 0.12]
+        assert parsed[-2] == [751_600.0, 0.35]
+        assert parsed[-1] == ["inf", 0.37]
+        table = tax_table_for_filing_status("mfj", inflation_factor=1.0)
+        tax = federal_income_tax(150_000, table)
+        assert 22_000 < tax < 24_000, tax
+        return f"MFJ tax on $150,000 taxable is ${tax:,.0f}"
+
+    _run_check(report, "Core", "Federal bracket ceilings", check_federal_brackets_are_not_shifted)
+
+    def check_gain_fraction_is_not_divided_twice():
+        from model.engine import tax_policy_from_params
+
+        parsed = tax_policy_from_params({"taxable_gain_fraction": 0.5})
+        explicit_zero = tax_policy_from_params({"taxable_gain_fraction": 0})
+        missing = tax_policy_from_params({})
+        percent = tax_policy_from_params({"taxable_gain_fraction": 50})
+        assert abs(parsed.taxable_gain_fraction - 0.5) < 1e-9
+        assert explicit_zero.taxable_gain_fraction == 0.0
+        assert abs(missing.taxable_gain_fraction - 0.5) < 1e-9
+        assert abs(percent.taxable_gain_fraction - 0.5) < 1e-9
+        return "50% snapshot stays 0.5; explicit 0% stays 0"
+
+    _run_check(report, "Core", "Taxable gain fraction units", check_gain_fraction_is_not_divided_twice)
+
+    def check_wages_cover_their_own_tax():
+        from model.taxes import solve_withdrawal_for_expenses, tax_table_for_filing_status
+
+        table = tax_table_for_filing_status("mfj", inflation_factor=1.0)
+        withdrawal, *_rest = solve_withdrawal_for_expenses(
+            40_000,
+            ss_gross=0,
+            pension_gross=0,
+            rental_gross=0,
+            earned_income=120_000,
+            roth_fraction=0.0,
+            filing_status="mfj",
+            inflation_factor=1.0,
+            ss_tax_method="irs_provisional",
+            ss_taxable_fraction=0.5,
+            tax_mode="federal_brackets",
+            flat_rate=0.22,
+            table=table,
+            rmd_floor=0,
+            state_tax_enabled=False,
+            niit_enabled=False,
+        )
+        assert withdrawal < 1.0, withdrawal
+        return f"paycheck covers $40k spending; withdrawal ${withdrawal:,.2f}"
+
+    _run_check(report, "Core", "Wages count as spendable cash", check_wages_cover_their_own_tax)
+
+    def check_benefits_inflate_before_claim():
+        from model.engine import PersonFlows, inflate_flows
+
+        flows = PersonFlows(
+            contributions=0,
+            earned_income=0,
+            expenses=60_000,
+            additives={},
+            rental=0,
+            ss=25_000,
+            pension=10_000,
+            ss_active=False,
+            pension_active=False,
+        )
+        inflate_flows(flows, year_inflation=0.03, rental_growth=0.03)
+        assert abs(flows.ss - 25_750) < 1e-6
+        assert abs(flows.pension - 10_300) < 1e-6
+        return f"unclaimed SS ${flows.ss:,.0f} after 3% inflation"
+
+    _run_check(report, "Core", "Benefits inflate before they start", check_benefits_inflate_before_claim)
+
+    def check_salt_cap_follows_obbba():
+        from model.cpa_tax import salt_deduction_cap
+
+        assert salt_deduction_cap(tax_year=2024, filing_status="mfj", magi=0) == 10_000
+        assert salt_deduction_cap(tax_year=2025, filing_status="mfj", magi=100_000) == 40_000
+        assert salt_deduction_cap(tax_year=2025, filing_status="mfs", magi=0) == 20_000
+        cap_2026 = salt_deduction_cap(tax_year=2026, filing_status="mfj", magi=100_000)
+        assert abs(cap_2026 - 40_400) < 1
+        phased = salt_deduction_cap(tax_year=2026, filing_status="mfj", magi=605_000)
+        assert abs(phased - 10_400) < 1
+        assert salt_deduction_cap(tax_year=2030, filing_status="single", magi=0) == 10_000
+        return f"2026 cap ${cap_2026:,.0f}; phase-down ${phased:,.0f}"
+
+    _run_check(report, "Core", "SALT cap follows the statute", check_salt_cap_follows_obbba)
+
+    def check_unused_deduction_reduces_gains():
+        from model.taxes import federal_ltcg_tax, federal_tax_with_ltcg, tax_table_for_filing_status
+
+        table = tax_table_for_filing_status("mfj", inflation_factor=1.0)
+        taxed, _, _ = federal_tax_with_ltcg(
+            ordinary_income=0,
+            ltcg=150_000,
+            table=table,
+            filing_status="mfj",
+        )
+        on_all_gains = federal_ltcg_tax(
+            150_000,
+            ordinary_taxable_income=0.0,
+            ltcg_tiers=table.ltcg_tiers,
+        )
+        assert taxed < on_all_gains - 1_000, (taxed, on_all_gains)
+        return f"gains after unused deduction ${taxed:,.0f} vs ${on_all_gains:,.0f} on the full $150k"
+
+    _run_check(report, "Core", "Unused deduction reduces long-term gains", check_unused_deduction_reduces_gains)
+
+    def check_amt_does_not_add_salt_twice():
+        from model.cpa_tax import compute_amti
+
+        itemized = compute_amti(
+            ordinary_income=100_000,
+            ltcg=50_000,
+            itemized_deduction=40_000,
+            salt_deducted=10_000,
+            deduction_method="itemized",
+        )
+        standard = compute_amti(
+            ordinary_income=100_000,
+            ltcg=50_000,
+            deduction_method="standard",
+        )
+        assert itemized == 120_000
+        assert standard == 150_000
+        return "itemized AMTI subtracts mortgage interest and charity, not the standard deduction"
+
+    _run_check(report, "Core", "AMT add-back is SALT only", check_amt_does_not_add_salt_twice)
+
+    def check_ss_and_niit_are_not_indexed():
+        from config.policy.live import policy_tables_for_year
+
+        tables = policy_tables_for_year(2026, inflation_factor=1.5)
+        assert tables["mfj_ss_base"] == 32_000
+        assert tables["single_ss_base"] == 25_000
+        assert tables["niit_mfj_threshold"] == 250_000
+        assert tables["niit_mfs_threshold"] == 125_000
+        return "provisional-income and NIIT thresholds stay at the statute"
+
+    _run_check(report, "Core", "SS and NIIT thresholds stay fixed", check_ss_and_niit_are_not_indexed)
+
+    def check_hundred_percent_roth_is_allowed():
+        from model.projection import _validate_params
+
+        params = _sample_params()
+        params["roth_portfolio_pct"] = 1.0
+        params["contribution_roth_pct"] = 1.0
+        _validate_params(params)
+        params["roth_portfolio_pct"] = 1.01
+        try:
+            _validate_params(params)
+        except ValueError:
+            return "100% Roth is accepted; above 100% is rejected"
+        raise AssertionError("expected rejection above 100% Roth")
+
+    _run_check(report, "Core", "100% Roth is allowed", check_hundred_percent_roth_is_allowed)
+
+    def check_phase_percents_keep_parsed_ratios():
+        from model.expenses import expense_policy_from_params
+
+        high = expense_policy_from_params({"expense_go_go_pct": 1.6})
+        whole = expense_policy_from_params({"expense_slow_go_pct": 80})
+        blank = expense_policy_from_params({})
+        assert abs(high.go_go_pct - 1.6) < 1e-9
+        assert abs(whole.slow_go_pct - 0.80) < 1e-9
+        assert abs(blank.go_go_pct - 1.0) < 1e-9
+        return "160% stays 1.60; 80 stays 0.80; blank stays 100%"
+
+    _run_check(report, "Core", "Phase percents keep parsed ratios", check_phase_percents_keep_parsed_ratios)
+
+    def check_aime_caps_at_wage_base():
+        from model.ss import aime_from_career_earnings, ss_contribution_base
+
+        base = ss_contribution_base(2026)
+        assert base == 184_500
+        assert aime_from_career_earnings(300_000, wage_base=base) == base / 12
+        return f"2026 wage base ${base:,.0f}"
+
+    _run_check(report, "Core", "AIME respects the wage base", check_aime_caps_at_wage_base)
+
+    def check_interest_stops_after_payoff():
+        from model.cpa_tax import ItemizedInputs, itemized_for_year
+
+        itemized = ItemizedInputs(mortgage_interest=12_000)
+        still = itemized_for_year(itemized, {"self": {"mortgage_payoff_year": 2030}}, 2030)
+        done = itemized_for_year(itemized, {"self": {"mortgage_payoff_year": 2030}}, 2031)
+        assert still.mortgage_interest == 12_000
+        assert done.mortgage_interest == 0
+        return "itemized interest is zero the year after payoff"
+
+    _run_check(report, "Core", "Itemized interest ends at payoff", check_interest_stops_after_payoff)
+
+    def check_each_person_rmd_uses_own_age():
+        from model.accounts import AccountBalances, HouseholdLedger
+        from model.engine import pooled_rmd_floor
+
+        ledger = HouseholdLedger(
+            by_person={"__household__": AccountBalances(traditional=1_000_000)}
+        )
+        persons = {
+            "self": {"asset_share_pct": 60},
+            "wife": {"asset_share_pct": 40},
+        }
+        floor = pooled_rmd_floor(
+            ledger,
+            persons,
+            {"self": 75, "wife": 60},
+            {"self": 73, "wife": 73},
+        )
+        expected = 600_000 / 24.6
+        assert abs(floor - expected) < 1, floor
+        return f"older spouse RMD ${floor:,.0f} on their share only"
+
+    _run_check(report, "Core", "RMD uses each person's age", check_each_person_rmd_uses_own_age)
+
+    def check_pre_marriage_withdrawal_hits_the_pool():
+        from model import run_retirement_projection
+
+        params = _sample_params()
+        params["marriage_year"] = 2030
+        params["inflation_rate"] = 0.0
+        params["investment_return_mean"] = 0.0
+        params["state_tax_enabled"] = False
+        params["tax_calculation"] = "flat"
+        params["post_retire_tax_rate"] = 0.0
+        params["pre_retire_tax_rate"] = 0.0
+        params["life_expectancy"] = 72
+        for name, age, assets in (("self", 70, 400_000), ("wife", 68, 200_000)):
+            person = params["persons"][name]
+            person["current_age"] = age
+            person["retirement_age"] = 65
+            person["initial_assets"] = assets
+            person["annual_contributions"] = 0
+            person["base_expenses"] = 40_000
+            person["ss_amount"] = 0
+            person["pension_amount"] = 0
+            person["rental_income_start"] = 0
+            person["health_insurance_post_retire"] = 0
+            person["health_insurance_pre_medicare"] = 0
+            person["long_term_care_annual"] = 0
+        row = run_retirement_projection(params)["joint"].iloc[0]
+        assert row["Withdrawals_Gross"] > 10_000
+        assert row["Assets_End"] < row["Assets_Start"] - 10_000
+        return (
+            f"pre-marriage withdrawal ${row['Withdrawals_Gross']:,.0f} "
+            f"leaves ${row['Assets_End']:,.0f}"
+        )
+
+    _run_check(
+        report,
+        "Core",
+        "Pre-marriage withdrawals come from the household pool",
+        check_pre_marriage_withdrawal_hits_the_pool,
+    )
+
+    def check_survivor_keeps_mortgage_and_larger_benefit():
+        from model import run_retirement_projection
+
+        params = _sample_params()
+        params["inflation_rate"] = 0.0
+        params["investment_return_mean"] = 0.0
+        params["state_tax_enabled"] = False
+        params["life_expectancy"] = 90
+        self_p = params["persons"]["self"]
+        wife_p = params["persons"]["wife"]
+        self_p.update(
+            current_age=86,
+            retirement_age=65,
+            life_expectancy=90,
+            base_expenses=40_000,
+            ss_amount=30_000,
+            ss_start_age=67,
+            pension_amount=0,
+            rental_income_start=0,
+            mortgage_annual=0,
+            annual_contributions=0,
+            health_insurance_post_retire=0,
+            health_insurance_pre_medicare=0,
+            long_term_care_annual=0,
+        )
+        wife_p.update(
+            current_age=86,
+            retirement_age=65,
+            life_expectancy=86,
+            base_expenses=35_000,
+            ss_amount=20_000,
+            ss_start_age=67,
+            pension_amount=0,
+            rental_income_start=0,
+            mortgage_annual=12_000,
+            mortgage_payoff_year=2040,
+            annual_contributions=0,
+            health_insurance_post_retire=0,
+            health_insurance_pre_medicare=0,
+            long_term_care_annual=0,
+        )
+        df = run_retirement_projection(params)["joint"]
+        both = df[df["Year"] == 2026].iloc[0]
+        survivor = df[df["Year"] == 2027].iloc[0]
+        assert abs(both["Expenses"] - 87_000) < 1, both["Expenses"]
+        assert abs(survivor["Expenses"] - 52_000) < 1, survivor["Expenses"]
+        assert abs(survivor["SS"] - 30_000) < 1, survivor["SS"]
+        return f"survivor expenses ${survivor['Expenses']:,.0f}, SS ${survivor['SS']:,.0f}"
+
+    _run_check(
+        report,
+        "Core",
+        "Survivor keeps the mortgage and the larger benefit",
+        check_survivor_keeps_mortgage_and_larger_benefit,
+    )
+
+    def check_mortgage_import_does_not_double_a_refresh():
+        from dataclasses import dataclass
+
+        from app.core.lazy_mode.orchestrator import (
+            _stack_mortgage_if_needed,
+            _stack_property_tax_if_needed,
+        )
+        from app.core.planning_snapshot import PlanningSnapshot
+        from config.model_fields import FIELDS_BY_KEY
+        from providers.document_extractors.statement_pdf import (
+            extract_1098_suggestions,
+            extract_mortgage_statement_suggestions,
+            extract_property_tax_bill_suggestions,
+        )
+
+        @dataclass
+        class Suggestion:
+            field_key: str
+            raw_value: str
+            source_quote: str = ""
+            display_value: str = ""
+
+        snapshot = PlanningSnapshot()
+        snapshot.set_raw(FIELDS_BY_KEY["mortgage_annual"], "24000", person="self")
+        snapshot.set_source("self", "mortgage_annual", "Mortgage statement import")
+        snapshot.set_raw(FIELDS_BY_KEY["mortgage_payoff_year"], "2050", person="self")
+        refreshed = _stack_mortgage_if_needed(
+            snapshot,
+            [Suggestion("mortgage_annual", "25000", "new statement")],
+            document_id="mortgage_statement",
+            person="self",
+        )
+        assert refreshed[0].raw_value == "25000"
+        second = _stack_mortgage_if_needed(
+            snapshot,
+            [Suggestion("mortgage_annual", "18000", "other house")],
+            document_id="mortgage_statement",
+            person="self",
+        )
+        assert float(str(second[0].raw_value).replace(",", "")) == 42_000
+        form = _stack_mortgage_if_needed(
+            snapshot,
+            [Suggestion("mortgage_annual", "9000", "1098 interest")],
+            document_id="form_1098",
+            person="self",
+        )
+        assert form == []
+
+        snapshot.set_raw(FIELDS_BY_KEY["property_tax_annual"], "8000", person="self")
+        snapshot.set_source("self", "property_tax_annual", "Property tax bill import")
+        same_bill = _stack_property_tax_if_needed(
+            snapshot,
+            [Suggestion("property_tax_annual", "8200")],
+            document_id="property_tax_bill",
+            person="self",
+        )
+        assert same_bill[0].raw_value == "8200"
+
+        statement = """
+        Statement date 09/15/2026
+        Current P&I Payment $2,000.00
+        Current Total Pymt $2,500.00
+        YTD interest $8,000.00
+        Outstanding Principal $400,000.00
+        Interest rate 6.00%
+        Maturity date 2052
+        """
+        rows = {row.field_key: row for row in extract_mortgage_statement_suggestions(statement)}
+        payment = float(str(rows["mortgage_annual"].raw_value).replace(",", "").replace("$", ""))
+        assert abs(payment - 24_000) < 1, payment
+        assert rows["mortgage_annual"].confidence == "high"
+        assert rows["itemized_mortgage_interest"].confidence == "low"
+        assert rows["mortgage_payoff_year"].raw_value in {"2052", "2052.0"}
+
+        form_rows = {
+            row.field_key: row
+            for row in extract_1098_suggestions(
+                "Tax year 2026\nMortgage interest received $9,000.00\n"
+            )
+        }
+        assert form_rows["itemized_mortgage_interest"].confidence == "high"
+        assert "mortgage_annual" not in form_rows
+
+        both = extract_property_tax_bill_suggestions(
+            "Total Amount Due $8,000.00\nFirst installment $4,000.00"
+        )
+        annual = float(str(both[0].raw_value).replace(",", "").replace("$", ""))
+        assert abs(annual - 8_000) < 1, annual
+        only_installment = extract_property_tax_bill_suggestions("First installment $4,000.00")
+        doubled = float(str(only_installment[0].raw_value).replace(",", "").replace("$", ""))
+        assert abs(doubled - 8_000) < 1, doubled
+        return "same loan refreshes; a second loan stacks; 1098 does not add a payment"
+
+    _run_check(
+        report,
+        "Core",
+        "Mortgage and property-tax imports do not double a refresh",
+        check_mortgage_import_does_not_double_a_refresh,
+    )
+
+    def check_library_delete_stays_in_folder():
+        from app.core.lazy_mode.document_library import stored_path_in_library
+
+        assert stored_path_in_library("/etc/passwd") is False
+        assert stored_path_in_library("") is False
+        return "paths outside the document library are not deleted"
+
+    _run_check(
+        report,
+        "Core",
+        "Document library deletes stay in the library folder",
+        check_library_delete_stays_in_folder,
+    )
+
     # --- Phase 1: Security + data layer ---
     def check_vault_roundtrip():
         from security.vault import Vault
@@ -1936,21 +2377,21 @@ def run_regression() -> RegressionReport:
         from providers.expense_analyzer import analyze_expenses
         from providers.plaid_provider import TransactionRecord
 
-        def mortgage_txn(tid: str, account: str, month: int) -> TransactionRecord:
+        def utility_txn(tid: str, account: str, month: int) -> TransactionRecord:
             return TransactionRecord(
                 tid,
                 account,
                 f"2025-{month:02d}-15",
-                1200.0,
-                "Mortgage Payment",
-                "Chase",
+                180.0,
+                "City Power",
+                "City Power",
                 False,
-                pfc_primary="LOAN_PAYMENTS",
-                pfc_detailed="LOAN_PAYMENTS_MORTGAGE_PAYMENT",
+                pfc_primary="RENT_AND_UTILITIES",
+                pfc_detailed="RENT_AND_UTILITIES_GAS_AND_ELECTRICITY",
             )
 
-        txns = [mortgage_txn(f"m{i}", "a_self", i) for i in range(1, 4)]
-        txns += [mortgage_txn(f"w{i}", "a_wife", i) for i in range(1, 4)]
+        txns = [utility_txn(f"m{i}", "a_self", i) for i in range(1, 4)]
+        txns += [utility_txn(f"w{i}", "a_wife", i) for i in range(1, 4)]
         analysis = analyze_expenses(
             txns,
             account_owners={"a_self": "self", "a_wife": "wife"},
@@ -2480,7 +2921,9 @@ def run_regression() -> RegressionReport:
         )
         assert itemized.deduction_method == "itemized"
         assert itemized.deduction_used > standard.deduction_used
-        assert itemized.amt_surcharge > 0
+        # Mortgage interest and charity reduce AMTI, so this mix stays on the regular tax.
+        assert itemized.amt_surcharge == 0
+        assert itemized.total_federal < standard.total_federal
         return (
             f"itemized ded ${itemized.deduction_used:,.0f}, "
             f"AMT ${itemized.amt_surcharge:,.0f}"

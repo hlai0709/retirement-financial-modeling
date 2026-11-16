@@ -375,7 +375,10 @@ def _default_included(category: str, expense_type: str, annual_amount: float) ->
     if category in {"education", "other", "mortgage"}:
         # Mortgage is a separate plan field; other/school ignored for Base for now
         return False
-    if category in {"food", "dining", "entertainment", "travel"}:
+    if category == "travel":
+        # A one-off trip is not a retirement bill. Recurring travel still is.
+        return expense_type == "recurring"
+    if category in {"food", "dining", "entertainment"}:
         # Lifestyle averages — include so Apply can fold them into Base
         return True
     if expense_type == "variable" and annual_amount >= ONE_OFF_EXCLUDE_ANNUAL:
@@ -472,11 +475,11 @@ def merge_expense_user_overrides(
     """Preserve user include / type / owner choices across a Plaid re-analyze."""
     if prior is None or not prior.items:
         return analysis
-    prior_by_merchant: dict[str, ExpenseLineItem] = {}
+    prior_by_key: dict[tuple[str, str], ExpenseLineItem] = {}
     for item in prior.items:
-        prior_by_merchant.setdefault(item.merchant, item)
+        prior_by_key.setdefault((item.merchant, item.owner), item)
     for item in analysis.items:
-        prev = prior_by_merchant.get(item.merchant)
+        prev = prior_by_key.get((item.merchant, item.owner))
         if prev is None:
             continue
         item.included = prev.included

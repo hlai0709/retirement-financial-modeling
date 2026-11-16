@@ -1093,6 +1093,7 @@ class PlanningSession:
     def apply_expenses_review(self, rows: list[dict[str, Any]]) -> dict[str, Any]:
         try:
             from app.core.presentation.spending_builder import (
+                copy_healthcare_from_expense_rows,
                 sync_expense_rows_into_spending_breakdown,
             )
 
@@ -1138,16 +1139,22 @@ class PlanningSession:
                         item.category = category
                 service.save_expense_snapshot(cached)
             apply_owner_expenses(self.snapshot, totals, expense_snapshot=cached)
+            healthcare = copy_healthcare_from_expense_rows(self.snapshot, rows)
             sync_expense_rows_into_spending_breakdown(self.snapshot, rows)
             self._persist()
             parts = ", ".join(f"{k} ${v:,.0f}" for k, v in list(breakdown.items())[:8])
+            health_note = ""
+            if healthcare:
+                bits = ", ".join(f"{k} ${v:,.0f}" for k, v in healthcare.items())
+                health_note = f" Healthcare premium from checked bills ({bits}) stays out of base."
             return {
                 "ok": True,
                 "message": (
                     f"Base Expenses = recurring bills + food + dining + entertainment + travel "
-                    f"(ignores other/education/mortgage). "
+                    f"(ignores other/education/mortgage/healthcare). "
                     f"Self ${totals.get('self', 0):,.0f}, wife ${totals.get('wife', 0):,.0f}"
                     + (f" · {parts}" if parts else "")
+                    + health_note
                     + ". Edit further in Spending builder anytime."
                 ),
                 "totals": totals,

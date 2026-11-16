@@ -127,6 +127,13 @@ BASE_LIFESTYLE_CATEGORIES: frozenset[str] = frozenset(
     }
 )
 BASE_EXPENSE_CATEGORIES: frozenset[str] = BASE_RECURRING_CATEGORIES | BASE_LIFESTYLE_CATEGORIES
+
+
+def counts_toward_base(category_id: str) -> bool:
+    """Base living excludes healthcare (it has its own premium fields) and mortgage."""
+    if category_id == "healthcare":
+        return False
+    return category_id in BASE_EXPENSE_CATEGORIES or category_id == "housing_rent"
 IGNORE_FOR_BASE_CATEGORIES: frozenset[str] = frozenset(
     {
         "mortgage",
@@ -315,38 +322,90 @@ def sync_expense_rows_into_spending_breakdown(
     snapshot: PlanningSnapshot,
     rows: list[dict[str, Any]],
 ) -> None:
-    """Rebuild category breakdown from expense-review rows (excludes mortgage)."""
+    """Update categories the review actually mentioned. Leave the rest alone.
+
+    Mortgage and property tax stay on their plan fields. A category with no
+    rows (rent the user typed, a bill this export did not see) is not zeroed.
+    """
     if not hasattr(snapshot, "spending_breakdown") or snapshot.spending_breakdown is None:
         snapshot.spending_breakdown = {}
-    buckets: dict[str, dict[str, float]] = {
-        "self": {c["id"]: 0.0 for c in SPENDING_CATEGORIES},
-        "wife": {c["id"]: 0.0 for c in SPENDING_CATEGORIES},
-    }
+    sums: dict[str, dict[str, float]] = {"self": {}, "wife": {}}
+    seen: dict[str, set[str]] = {"self": set(), "wife": set()}
     for row in rows:
-        if not row.get("included"):
-            continue
         owner = str(row.get("owner") or "")
-        if owner not in buckets:
+        if owner not in sums:
             continue
         cat = str(row.get("category") or "other").lower()
         if cat == "mortgage":
             continue
         builder_id = _PLAID_TO_BUILDER.get(cat, "other")
-        buckets[owner][builder_id] = buckets[owner].get(builder_id, 0.0) + _money(
+        seen[owner].add(builder_id)
+        if not row.get("included"):
+            continue
+        sums[owner][builder_id] = sums[owner].get(builder_id, 0.0) + _money(
             row.get("annual_amount")
         )
-    for person, values in buckets.items():
+    for person in ("self", "wife"):
         existing = dict(snapshot.spending_breakdown.get(person) or {})
-        # Preserve mortgage line from plan / prior import
-        mortgage = _money((snapshot.persons.get(person) or {}).get("mortgage_annual"))
+        for cid in seen[person]:
+            existing[cid] = round(sums[person].get(cid, 0.0), 2)
+        person_fields = snapshot.persons.get(person) or {}
+        mortgage = _money(person_fields.get("mortgage_annual"))
         if mortgage <= 0:
             mortgage = _money(existing.get("mortgage"))
-        for cid, amount in values.items():
-            if cid == "mortgage":
-                continue
-            existing[cid] = round(amount, 2)
         existing["mortgage"] = round(mortgage, 2) if mortgage > 0 else 0.0
+        plan_tax = _money(person_fields.get("property_tax_annual"))
+        if "property_tax" not in seen[person] and plan_tax > 0:
+            existing["property_tax"] = round(plan_tax, 2)
         snapshot.spending_breakdown[person] = existing
+        if "property_tax" in seen[person]:
+            prop_field = FIELDS_BY_KEY.get("property_tax_annual")
+            if prop_field is not None:
+                amount = _money(existing.get("property_tax"))
+                snapshot.set_raw(
+                    prop_field,
+                    format_field_value(prop_field, amount),
+                    person=person,
+                )
+                snapshot.set_source(
+                    person,
+                    "property_tax_annual",
+                    "Expense review" if amount > 0 else "Manual",
+                )
+
+
+def copy_healthcare_from_expense_rows(
+    snapshot: PlanningSnapshot,
+    rows: list[dict[str, Any]],
+) -> dict[str, float]:
+    """Put checked healthcare into the premium field when that field is still blank."""
+    totals = {"self": 0.0, "wife": 0.0}
+    for row in rows:
+        if not row.get("included"):
+            continue
+        cat = str(row.get("category") or "").lower()
+        builder_id = _PLAID_TO_BUILDER.get(cat, cat)
+        if builder_id != "healthcare" and cat != "healthcare":
+            continue
+        owner = str(row.get("owner") or "")
+        if owner in totals:
+            totals[owner] += _money(row.get("annual_amount"))
+    written: dict[str, float] = {}
+    field = FIELDS_BY_KEY.get("health_insurance_pre_medicare")
+    if field is None:
+        return written
+    for person, amount in totals.items():
+        if amount <= 0:
+            continue
+        person_fields = snapshot.persons.get(person) or {}
+        if _money(person_fields.get("health_insurance_pre_medicare")) > 0:
+            continue
+        if _money(person_fields.get("health_insurance_post_retire")) > 0:
+            continue
+        snapshot.set_raw(field, format_field_value(field, amount), person=person)
+        snapshot.set_source(person, field.key, "Expense review")
+        written[person] = round(amount, 2)
+    return written
 
 
 def _autofill_from_plaid_expenses(snapshot: PlanningSnapshot, person: str) -> dict[str, float]:
@@ -364,9 +423,6 @@ def _autofill_from_plaid_expenses(snapshot: PlanningSnapshot, person: str) -> di
     for item in cached.analysis.items or []:
         if not getattr(item, "included", True):
             continue
-        # Steady bills for retirement base — not movies / car buys / trips
-        if str(getattr(item, "expense_type", "") or "") != "recurring":
-            continue
         owner = str(getattr(item, "owner", "") or "")
         if owner == "exclude":
             continue
@@ -382,6 +438,12 @@ def _autofill_from_plaid_expenses(snapshot: PlanningSnapshot, person: str) -> di
         if cat == "mortgage" and plan_has_mortgage:
             continue
         builder_id = _PLAID_TO_BUILDER.get(cat, "other")
+        expense_type = str(getattr(item, "expense_type", "") or "")
+        if expense_type != "recurring":
+            lifestyle = builder_id in {"food", "dining", "entertainment"}
+            recurring_bill = builder_id in BASE_RECURRING_CATEGORIES
+            if builder_id == "travel" or not (lifestyle or recurring_bill):
+                continue
         values[builder_id] = values.get(builder_id, 0.0) + annual
 
     return values
@@ -453,7 +515,7 @@ def build_spending_builder(
         annual = amounts.get(cid, 0.0)
         if cid == "mortgage":
             mortgage_total += annual
-        elif cid in BASE_EXPENSE_CATEGORIES or cid == "housing_rent":
+        elif counts_toward_base(cid):
             base_total += annual
         rows.append(
             {
@@ -463,7 +525,7 @@ def build_spending_builder(
                 "annual": round(annual, 2),
                 "monthly": round(annual / 12.0, 2) if annual else 0.0,
                 "source": sources.get(cid) or "",
-                "to_base": cid in BASE_EXPENSE_CATEGORIES or cid == "housing_rent",
+                "to_base": counts_toward_base(cid),
             }
         )
 
@@ -1067,13 +1129,9 @@ def apply_spending_builder(
         cid = cat["id"]
         cleaned[cid] = round(_money(amounts.get(cid)), 2)
 
-    # Base living = recurring bills + food/dining/entertainment/travel (+ rent if set).
-    # Ignores other / education / shopping for Base (still saved in breakdown for editing).
-    base_total = sum(
-        v
-        for k, v in cleaned.items()
-        if k in BASE_EXPENSE_CATEGORIES or k == "housing_rent"
-    )
+    # Base living = recurring bills + food/dining/entertainment/travel (+ rent).
+    # Healthcare is a premium field, not part of base, so it is not counted twice.
+    base_total = sum(v for k, v in cleaned.items() if counts_toward_base(k))
     mortgage_total = cleaned.get("mortgage", 0.0)
 
     base_field = FIELDS_BY_KEY["base_expenses"]
@@ -1116,26 +1174,32 @@ def apply_spending_builder(
         snapshot.spending_breakdown = {}
     snapshot.spending_breakdown[person] = cleaned
 
-    phase = apply_suggested_expense_phase_pcts(snapshot, cleaned, person=person)
-    phase_note = ""
-    if phase.get("ok"):
-        phase_note = (
-            f" Age-banded spend set to Go-Go {phase['expense_go_go_pct']:g}% / "
-            f"Slow-Go {phase['expense_slow_go_pct']:g}% / No-Go {phase['expense_no_go_pct']:g}% "
-            f"(permanent ${phase['permanent']:,.0f} stays; lifestyle ${phase['lifestyle']:,.0f} steps down). "
-            "Mortgage continues until payoff year outside these %."
-        )
+    healthcare_note = ""
+    healthcare = cleaned.get("healthcare", 0.0)
+    person_fields = snapshot.persons.get(person) or {}
+    pre = _money(person_fields.get("health_insurance_pre_medicare"))
+    post = _money(person_fields.get("health_insurance_post_retire"))
+    if healthcare > 0 and pre <= 0 and post <= 0:
+        health_field = FIELDS_BY_KEY.get("health_insurance_pre_medicare")
+        if health_field is not None:
+            snapshot.set_raw(
+                health_field,
+                format_field_value(health_field, healthcare),
+                person=person,
+            )
+            snapshot.set_source(person, "health_insurance_pre_medicare", "Spending builder")
+            healthcare_note = f" Healthcare ${healthcare:,.0f}/yr is the pre-Medicare premium, not base."
 
     return {
         "ok": True,
         "person": person,
         "base_expenses": base_total,
         "mortgage_annual": mortgage_total,
-        "phase_suggestion": phase if phase.get("ok") else None,
+        "phase_suggestion": None,
         "message": (
             f"{'You' if person == 'self' else 'Spouse'}: "
             f"Base Expenses ${base_total:,.0f}/yr"
             + (f" + Mortgage ${mortgage_total:,.0f}/yr" if mortgage_total else "")
-            + phase_note
+            + healthcare_note
         ),
     }

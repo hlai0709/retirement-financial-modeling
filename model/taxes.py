@@ -315,6 +315,23 @@ def federal_ltcg_tax(
     return tax
 
 
+def _taxable_after_deduction(
+    ordinary_income: float,
+    ltcg: float,
+    deduction: float,
+) -> tuple[float, float]:
+    """Apply a deduction to ordinary income, then to long-term gains.
+
+    A standard or itemized deduction the ordinary income does not use up still
+    reduces long-term gains before the preferential rates are applied.
+    """
+    ordinary = max(0.0, ordinary_income)
+    gains = max(0.0, ltcg)
+    ordinary_taxable = max(0.0, ordinary - deduction)
+    unused = max(0.0, deduction - ordinary)
+    return ordinary_taxable, max(0.0, gains - unused)
+
+
 def federal_tax_with_ltcg(
     *,
     ordinary_income: float,
@@ -331,22 +348,16 @@ def federal_tax_with_ltcg(
         inflation_factor=inflation_factor,
     )
     total_deduction = table.standard_deduction + extra_sd
-    ordinary_taxable = max(0.0, ordinary_income - total_deduction)
-    if ltcg <= 0:
-        return federal_income_tax(ordinary_taxable, table), federal_income_tax(
-            ordinary_taxable, table
-        ), 0.0
-    if ordinary_taxable <= 0:
-        ord_tax = 0.0
-        ltcg_tax = federal_ltcg_tax(
-            ltcg,
-            ordinary_taxable_income=0.0,
-            ltcg_tiers=table.ltcg_tiers,
-        )
-        return ord_tax + ltcg_tax, ord_tax, ltcg_tax
-    ord_tax = federal_income_tax(ordinary_taxable, table)
-    ltcg_tax = federal_ltcg_tax(
+    ordinary_taxable, ltcg_taxable = _taxable_after_deduction(
+        ordinary_income,
         ltcg,
+        total_deduction,
+    )
+    ord_tax = federal_income_tax(ordinary_taxable, table) if ordinary_taxable > 0 else 0.0
+    if ltcg_taxable <= 0:
+        return ord_tax, ord_tax, 0.0
+    ltcg_tax = federal_ltcg_tax(
+        ltcg_taxable,
         ordinary_taxable_income=ordinary_taxable,
         ltcg_tiers=table.ltcg_tiers,
     )
@@ -510,6 +521,7 @@ def compute_retirement_tax_detail(
     roth_conversion: float = 0.0,
     planning_precision: str = "standard",
     itemized: ItemizedInputs | None = None,
+    tax_year: int = 2024,
 ) -> RetirementTaxDetail:
     """Return federal (incl. NIIT/AMT), state, and taxable Social Security detail."""
     from model.state_taxes import compute_state_income_tax, state_profile
@@ -571,6 +583,7 @@ def compute_retirement_tax_detail(
                 inflation_factor=inflation_factor,
                 itemized=itemized_inputs,
                 agi=agi,
+                tax_year=tax_year,
             )
             federal = cpa.total_federal
             deduction_method = cpa.deduction_method
@@ -644,11 +657,16 @@ def spendable_cash(
     ss_gross: float,
     pension_gross: float,
     rental_gross: float,
+    earned_income: float = 0.0,
     withdrawal_gross: float,
     tax: float,
 ) -> float:
-    """Cash available for spending after paying income taxes from income sources."""
-    return ss_gross + pension_gross + rental_gross + withdrawal_gross - tax
+    """Cash available for spending after paying income taxes from income sources.
+
+    Wages are included because the tax figure already taxes them. Leaving them
+    out forces the portfolio to withdraw enough to pay tax on a paycheck.
+    """
+    return ss_gross + pension_gross + rental_gross + earned_income + withdrawal_gross - tax
 
 
 def solve_withdrawal_for_expenses(
@@ -681,6 +699,7 @@ def solve_withdrawal_for_expenses(
     roth_conversion: float = 0.0,
     planning_precision: str = "standard",
     itemized: ItemizedInputs | None = None,
+    tax_year: int = 2024,
 ) -> tuple[float, float, float, float, float]:
     """Find gross portfolio withdrawal covering expenses and RMD floor."""
     if expenses <= 0 and rmd_floor <= 0:
@@ -727,6 +746,7 @@ def solve_withdrawal_for_expenses(
             roth_conversion=roth_conversion,
             planning_precision=planning_precision,
             itemized=itemized,
+            tax_year=tax_year,
         )
         return detail.federal, detail.state, detail.ss_taxable
 
@@ -736,6 +756,7 @@ def solve_withdrawal_for_expenses(
             ss_gross=ss_gross,
             pension_gross=pension_gross,
             rental_gross=rental_gross,
+            earned_income=earned_income,
             withdrawal_gross=withdrawal,
             tax=federal + state,
         )

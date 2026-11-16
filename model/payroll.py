@@ -70,6 +70,7 @@ def compute_working_year_tax_detail(
     planning_precision: str = "standard",
     itemized: ItemizedInputs | None = None,
     seniors_65_count: int = 0,
+    tax_year: int = 2024,
 ) -> WorkingYearTaxDetail:
     """Return federal, state, and FICA taxes on W-2 wages (CPA-aware when requested)."""
     if wages <= 0:
@@ -93,6 +94,7 @@ def compute_working_year_tax_detail(
                 inflation_factor=inflation_factor,
                 itemized=itemized_inputs,
                 agi=wages,
+                tax_year=tax_year,
             )
             federal = cpa.total_federal
             deduction_method = cpa.deduction_method

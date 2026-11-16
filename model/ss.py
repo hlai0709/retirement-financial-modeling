@@ -88,11 +88,39 @@ def monthly_benefit_from_pia(
     return pia
 
 
-def aime_from_career_earnings(avg_annual_earnings: float) -> float:
-    """Simplified AIME proxy from career-average annual earnings."""
+# OASDI contribution and benefit base. Years not listed use the 2024 base
+# grown by the projection's inflation factor.
+_SS_WAGE_BASE_BY_YEAR = {
+    2024: 168_600.0,
+    2025: 176_100.0,
+    2026: 184_500.0,
+    2027: 192_300.0,
+}
+
+
+def ss_contribution_base(year: int, *, inflation_factor: float = 1.0) -> float:
+    """Annual earnings cap used before an AIME proxy is divided by 12."""
+    known = _SS_WAGE_BASE_BY_YEAR.get(int(year))
+    if known is not None:
+        return known
+    return 168_600.0 * max(0.01, inflation_factor)
+
+
+def aime_from_career_earnings(
+    avg_annual_earnings: float,
+    *,
+    wage_base: float | None = None,
+) -> float:
+    """Simplified AIME proxy from career-average annual earnings.
+
+    Earnings above the Social Security wage base do not raise AIME.
+    """
     if avg_annual_earnings <= 0:
         return 0.0
-    return avg_annual_earnings / 12.0
+    capped = avg_annual_earnings
+    if wage_base is not None and wage_base > 0:
+        capped = min(avg_annual_earnings, wage_base)
+    return capped / 12.0
 
 
 def person_pia_monthly(
@@ -117,7 +145,8 @@ def person_pia_monthly(
     avg_annual = person.get("ss_career_avg_earnings")
     if avg_annual in (None, ""):
         avg_annual = person.get("annual_earned_income", 0)
-    aime = aime_from_career_earnings(float(avg_annual or 0))
+    wage_base = ss_contribution_base(current_year, inflation_factor=inflation_factor)
+    aime = aime_from_career_earnings(float(avg_annual or 0), wage_base=wage_base)
     return pia_from_aime(aime, inflation_factor=inflation_factor)
 
 
