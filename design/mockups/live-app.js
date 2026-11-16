@@ -849,6 +849,14 @@
     });
   }
 
+  function resultsHeadlineHtml(results) {
+    const headline = results.headline;
+    if (!headline) return "";
+    const tone = ["ok", "warn", "neutral"].includes(headline.tone) ? headline.tone : "neutral";
+    const lines = (headline.lines || []).map((line) => `<p>${esc(line)}</p>`).join("");
+    return `<div class="results-headline tone-${tone}"><h2>${esc(headline.title || "")}</h2>${lines}</div>`;
+  }
+
   function showResults(results) {
     ensureChrome();
     bindResultsChrome();
@@ -873,7 +881,7 @@
         body.innerHTML = "<p>No results data.</p>";
         return;
       }
-      let html = "";
+      let html = resultsHeadlineHtml(results);
       if (results.alerts && results.alerts.length && tab.key !== "adviser") {
         html += `<div class="results-alert liquid">${results.alerts.map((a) => `<p>${esc(a)}</p>`).join("")}</div>`;
       }
@@ -1001,6 +1009,34 @@
   }
 
   /* ── Field rendering ── */
+  function optionText(f, option, index) {
+    const labels = f.optionLabels;
+    if (labels && labels[index] != null && labels[index] !== "") return labels[index];
+    return option;
+  }
+
+  function radioControl(f) {
+    const key = esc(f.key || "");
+    const scope = f.scope ? ` data-scope="${esc(f.scope)}"` : "";
+    const person = f.person ? ` data-person="${esc(f.person)}"` : "";
+    const selected = f.on != null ? f.on : -1;
+    const pills = (f.options || []).map((option, index) =>
+      `<div class="radio-pill${index === selected ? " on" : ""}" data-value="${esc(option)}">${esc(optionText(f, option, index))}</div>`
+    ).join("");
+    return `<div class="radio-row" data-key="${key}"${scope}${person}>${pills}</div>`;
+  }
+
+  function selectControl(f) {
+    const key = esc(f.key || "");
+    const scope = f.scope ? ` data-scope="${esc(f.scope)}"` : "";
+    const person = f.person ? ` data-person="${esc(f.person)}"` : "";
+    const policy = f.key === "state_of_residence" ? " data-policy-caption" : "";
+    const options = (f.options || []).map((option, index) =>
+      `<option value="${esc(option)}"${String(option) === String(f.value) ? " selected" : ""}>${esc(optionText(f, option, index))}</option>`
+    ).join("");
+    return `<div class="select-wrap"><select class="state-select" data-key="${key}"${scope}${person}${policy}>${options}</select></div>`;
+  }
+
   function fieldHtml(f, idx) {
     const n = idx + 1;
     if (f.type === "more") return `<p class="more-fields">${esc(f.text)}</p>`;
@@ -1008,32 +1044,29 @@
     const key = esc(f.key || "");
     const scope = f.scope ? ` data-scope="${esc(f.scope)}"` : "";
     const person = f.person ? ` data-person="${esc(f.person)}"` : "";
+    const example = f.example ? " example" : "";
     let control = "";
     switch (f.type) {
       case "radio":
-        control = `<div class="radio-row" data-key="${key}"${scope}${person}>${(f.options || []).map((o, i) =>
-          `<div class="radio-pill${i === (f.on ?? 0) ? " on" : ""}" data-value="${esc(o)}">${esc(o)}</div>`
-        ).join("")}</div>`;
+        control = radioControl(f);
         break;
       case "select":
-        control = `<div class="select-wrap"><select class="state-select" data-key="${key}"${scope}${person}${f.key === "state_of_residence" ? " data-policy-caption" : ""}>${(f.options || []).map((o) =>
-          `<option${o === f.value ? " selected" : ""}>${esc(o)}</option>`
-        ).join("")}</select></div>`;
+        control = selectControl(f);
         break;
       case "narrow":
       case "year":
-        control = `<input class="glass-input ${f.type === "year" ? "narrow year" : "narrow"}" type="text" value="${esc(f.value)}" data-key="${key}"${scope}${person} />`;
+        control = `<input class="glass-input ${f.type === "year" ? "narrow year" : "narrow"}${example}" type="text" value="${esc(f.value)}" data-key="${key}"${scope}${person} />`;
         break;
       case "medium":
         control = f.suffix
-          ? `<div class="input-suffix"><input class="glass-input medium" type="text" value="${esc(f.value)}" data-key="${key}"${scope}${person} /><span class="suffix">${esc(f.suffix)}</span></div>`
-          : `<input class="glass-input medium" type="text" value="${esc(f.value)}" data-key="${key}"${scope}${person} />`;
+          ? `<div class="input-suffix"><input class="glass-input medium${example}" type="text" value="${esc(f.value)}" data-key="${key}"${scope}${person} /><span class="suffix">${esc(f.suffix)}</span></div>`
+          : `<input class="glass-input medium${example}" type="text" value="${esc(f.value)}" data-key="${key}"${scope}${person} />`;
         break;
       case "dollar":
-        control = `<div class="input-dollar"><span class="prefix">$</span><input type="text" value="${esc(f.value)}" data-key="${key}"${scope}${person} /></div>`;
+        control = `<div class="input-dollar${example}"><span class="prefix">$</span><input class="${example.trim()}" type="text" value="${esc(f.value)}" data-key="${key}"${scope}${person} /></div>`;
         break;
       default:
-        control = `<input class="glass-input medium" type="text" value="${esc(f.value)}" data-key="${key}"${scope}${person} />`;
+        control = `<input class="glass-input medium${example}" type="text" value="${esc(f.value)}" data-key="${key}"${scope}${person} />`;
     }
     let caption = f.caption || "";
     if (f.key === "state_of_residence" && appState.policy_label) {
@@ -1042,7 +1075,10 @@
     const cap = caption ? `<p class="caption${f.captionTight ? " tight" : " loose"}">${esc(caption)}</p>` : "";
     const errKey = `${f.person || "shared"}:${f.key || ""}`;
     const err = `<p class="field-error" data-field-error="${esc(errKey)}" aria-live="polite"></p>`;
-    return `<div class="glass-inner field-block" data-field-block="${esc(errKey)}">${qLabel}${control}${err}${cap}</div>`;
+    const showWhen = f.showWhen
+      ? ` data-show-when="${esc(f.showWhen.key)}" data-show-value="${esc(f.showWhen.value)}"`
+      : "";
+    return `<div class="glass-inner field-block" data-field-block="${esc(errKey)}"${showWhen}>${qLabel}${control}${err}${cap}</div>`;
   }
 
   function fieldSearchText(f) {
@@ -1055,26 +1091,23 @@
     const key = esc(f.key || "");
     const scope = f.scope ? ` data-scope="${esc(f.scope)}"` : "";
     const person = f.person ? ` data-person="${esc(f.person)}"` : "";
+    const example = f.example ? " example" : "";
     switch (f.type) {
       case "radio":
-        return `<div class="radio-row" data-key="${key}"${scope}${person}>${(f.options || []).map((o, i) =>
-          `<div class="radio-pill${i === (f.on ?? 0) ? " on" : ""}" data-value="${esc(o)}">${esc(o)}</div>`
-        ).join("")}</div>`;
+        return radioControl(f);
       case "select":
-        return `<div class="select-wrap"><select class="state-select" data-key="${key}"${scope}${person}>${(f.options || []).map((o) =>
-          `<option${o === f.value ? " selected" : ""}>${esc(o)}</option>`
-        ).join("")}</select></div>`;
+        return selectControl(f);
       case "narrow":
       case "year":
-        return `<input class="glass-input ${f.type === "year" ? "narrow year" : "narrow"}" type="text" value="${esc(f.value)}" data-key="${key}"${scope}${person} />`;
+        return `<input class="glass-input ${f.type === "year" ? "narrow year" : "narrow"}${example}" type="text" value="${esc(f.value)}" data-key="${key}"${scope}${person} />`;
       case "medium":
         return f.suffix
-          ? `<div class="input-suffix"><input class="glass-input medium" type="text" value="${esc(f.value)}" data-key="${key}"${scope}${person} /><span class="suffix">${esc(f.suffix)}</span></div>`
-          : `<input class="glass-input medium" type="text" value="${esc(f.value)}" data-key="${key}"${scope}${person} />`;
+          ? `<div class="input-suffix"><input class="glass-input medium${example}" type="text" value="${esc(f.value)}" data-key="${key}"${scope}${person} /><span class="suffix">${esc(f.suffix)}</span></div>`
+          : `<input class="glass-input medium${example}" type="text" value="${esc(f.value)}" data-key="${key}"${scope}${person} />`;
       case "dollar":
-        return `<div class="input-dollar"><span class="prefix">$</span><input type="text" value="${esc(f.value)}" data-key="${key}"${scope}${person} /></div>`;
+        return `<div class="input-dollar${example}"><span class="prefix">$</span><input class="${example.trim()}" type="text" value="${esc(f.value)}" data-key="${key}"${scope}${person} /></div>`;
       default:
-        return `<input class="glass-input medium" type="text" value="${esc(f.value)}" data-key="${key}"${scope}${person} />`;
+        return `<input class="glass-input medium${example}" type="text" value="${esc(f.value)}" data-key="${key}"${scope}${person} />`;
     }
   }
 
@@ -1295,11 +1328,24 @@
     </div>`;
   }
 
-  function reviewBodyHtml(screen) {
-    const cards = (screen.summary || []).map((c) => {
+  function summaryCardsHtml(rows) {
+    return (rows || []).map((c) => {
       const jump = c.step_id ? ` data-review-jump="${esc(c.step_id)}"` : "";
       return `<button type="button" class="summary-card clickable"${jump}><h3>${esc(c.h)}</h3><p>${esc(c.p)}</p><span class="card-jump">Edit →</span></button>`;
     }).join("");
+  }
+
+  function reviewBodyHtml(screen) {
+    const cards = summaryCardsHtml(screen.summary);
+    const examples = screen.examples || [];
+    const exampleBlock = examples.length
+      ? `<div class="glass-inner">
+          <p class="q-label"><span>2.</span>Still using example numbers</p>
+          <p class="caption loose">These are sample figures. Replace them before you trust the result.</p>
+          <div class="summary-grid">${summaryCardsHtml(examples)}</div>
+        </div>`
+      : "";
+    const simNumber = examples.length ? 3 : 2;
     const sim = (screen.simOptions || []).map((o, i) =>
       `<div class="radio-pill${i === (screen.simOn ?? 0) ? " on" : ""}" data-sim="${esc(o)}">${esc(o)}</div>`
     ).join("");
@@ -1310,8 +1356,9 @@
       <p class="q-label"><span>1.</span>Your plan at a glance</p>
       <div class="summary-grid">${cards}</div>
     </div>
+    ${exampleBlock}
     <div class="glass-inner">
-      <p class="q-label"><span>2.</span>How should we simulate your plan?</p>
+      <p class="q-label"><span>${simNumber}.</span>How should we simulate your plan?</p>
       <div class="radio-row" data-field="sim">${sim}</div>
       ${viewBtn}
     </div>`;
@@ -1856,6 +1903,25 @@
     root.querySelectorAll("input[data-key='current_age']").forEach((input) => {
       maybeAutoFillBirthYear(root, input);
     });
+  }
+
+  function syncConditionalFields(root) {
+    root.querySelectorAll("[data-show-when]").forEach((block) => {
+      const key = block.dataset.showWhen;
+      const expected = block.dataset.showValue;
+      const row = root.querySelector(`.radio-row[data-key="${key}"]`);
+      const select = root.querySelector(`select[data-key="${key}"]`);
+      let current = "";
+      if (row) current = row.querySelector(".radio-pill.on")?.dataset.value || "";
+      else if (select) current = select.value;
+      block.hidden = current !== expected;
+    });
+  }
+
+  function clearExampleStyle(el) {
+    if (!el) return;
+    el.classList.remove("example");
+    el.closest(".input-dollar")?.classList.remove("example");
   }
 
   function bindRadioPills(root, selector, onChange) {
@@ -3171,6 +3237,7 @@
     };
 
     bindRadioPills(root, ".radio-row[data-key] .radio-pill", async () => {
+      syncConditionalFields(root);
       await syncDraftAndCompleteness();
       if (screen.stepId === "setup") {
         const cap = root.querySelector(".caption");
@@ -3199,6 +3266,7 @@
       input.addEventListener("change", () => validateAndSync(input));
       input.addEventListener("blur", () => validateAndSync(input));
       input.addEventListener("input", () => {
+        clearExampleStyle(input);
         if (input.dataset.key === "current_age") {
           maybeAutoFillBirthYear(root, input);
         }
@@ -3206,6 +3274,7 @@
       });
     });
     autoFillBirthYearsFromAges(root);
+    syncConditionalFields(root);
 
     bindRadioPills(root, ".radio-pill[data-sim]", async () => {
       const on = root.querySelector(".radio-pill[data-sim].on");

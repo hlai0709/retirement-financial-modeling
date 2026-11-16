@@ -7,15 +7,18 @@ from typing import Any
 from app.core.planning_snapshot import PlanningSnapshot
 from app.core.guided_catalog import STEP_GUIDED_INTROS
 from app.core.presentation.field_editor import (
+    display_value,
+    field_is_example,
     field_to_spec,
     fields_for_wizard_step,
     help_items_for_step,
     person_for_step,
 )
+from app.core.presentation.marriage_answer import marriage_answer
 from app.core.presentation.micro_screens import fields_for_micro_screen, micro_screen_meta
 from app.core.ui_groups import _UI_GROUP_BY_ID
 from app.core.workflow_definition import WorkflowDefinition, WorkflowStep
-from config.model_fields import FIELDS_BY_KEY, field_choice_values
+from config.model_fields import FIELDS_BY_KEY, ModelField, field_choice_values
 
 
 JOURNEY_LABELS: dict[str, str] = {
@@ -27,6 +30,7 @@ JOURNEY_LABELS: dict[str, str] = {
     "assets_wife": "What you own",
     "spending_self": "Spending",
     "spending_wife": "Spending",
+    "housing": "Housing",
     "healthcare_self": "Healthcare",
     "healthcare_wife": "Healthcare",
     "tax_benefits": "Taxes & benefits",
@@ -90,6 +94,91 @@ def _setup_screen(snapshot: PlanningSnapshot, step: WorkflowStep, *, index: int,
     return screen
 
 
+_EXAMPLE_REVIEW_FIELDS: tuple[tuple[str, str, str], ...] = (
+    ("current_age", "self", "Your age"),
+    ("current_age", "wife", "Spouse's age"),
+    ("retirement_age", "self", "Your retirement age"),
+    ("retirement_age", "wife", "Spouse's retirement age"),
+    ("initial_assets", "self", "Your assets"),
+    ("initial_assets", "wife", "Spouse's assets"),
+    ("base_expenses", "self", "Your spending"),
+    ("base_expenses", "wife", "Spouse's spending"),
+    ("annual_earned_income", "self", "Your income"),
+    ("annual_earned_income", "wife", "Spouse's income"),
+    ("ss_amount", "self", "Your Social Security"),
+    ("ss_amount", "wife", "Spouse's Social Security"),
+)
+
+
+def guided_step_field_rows(
+    snapshot: PlanningSnapshot,
+    step_id: str,
+) -> list[tuple[ModelField, str | None]]:
+    """(field, person) rows for one guided step, including the spouse's age."""
+    person = person_for_step(step_id)
+    sub_index = snapshot.wizard.sub_step_positions.get(
+        step_id,
+        snapshot.wizard.sub_step_index,
+    )
+    rows: list[tuple[ModelField, str | None]] = []
+    joint = snapshot.household_mode == "joint"
+    for field in fields_for_micro_screen(step_id, sub_index):
+        if joint and step_id == "timeline" and field.key in {"current_age", "birth_year"}:
+            rows.append((field, "self"))
+            rows.append((field, "wife"))
+            continue
+        field_person = person if field.scope == "person" else None
+        if field.scope == "person" and field_person is None:
+            field_person = "self"
+        rows.append((field, field_person))
+    return rows
+
+
+def _already_married_spec(snapshot: PlanningSnapshot) -> dict[str, Any]:
+    answer = marriage_answer(snapshot)
+    on = {"yes": 0, "no": 1}.get(answer, -1)
+    return {
+        "key": "already_married",
+        "scope": "shared",
+        "type": "radio",
+        "label": "Are you married?",
+        "options": ["yes", "no"],
+        "optionLabels": ["Yes", "Not yet"],
+        "on": on,
+        "value": answer,
+        "caption": "Yes files jointly every year. Not yet asks for the year you plan to marry.",
+    }
+
+
+def _example_review_rows(snapshot: PlanningSnapshot) -> list[dict[str, Any]]:
+    from app.core.ui_groups import ui_group_for_field
+
+    joint = snapshot.household_mode == "joint"
+    rows: list[dict[str, Any]] = []
+    for key, person, label in _EXAMPLE_REVIEW_FIELDS:
+        if person == "wife" and not joint:
+            continue
+        field = FIELDS_BY_KEY.get(key)
+        if field is None:
+            continue
+        scope_person = person if field.scope == "person" else None
+        if not field_is_example(snapshot, field, person=scope_person):
+            continue
+        shown = display_value(snapshot, field, person=scope_person)
+        if field.field_type == "money" and shown:
+            shown = f"${shown}"
+        rows.append(
+            {
+                "field_key": key,
+                "person": scope_person,
+                "h": label,
+                "p": f"{shown} is still the sample number",
+                "step_id": ui_group_for_field(field, person=scope_person),
+            }
+        )
+    return rows
+
+
 def _review_screen(snapshot: PlanningSnapshot, step: WorkflowStep, *, index: int, total: int) -> dict[str, Any]:
     params = snapshot.to_simulation_params()
     self_p = params["persons"]["self"]
@@ -126,6 +215,7 @@ def _review_screen(snapshot: PlanningSnapshot, step: WorkflowStep, *, index: int
             "step_id": "market",
         },
     ]
+    screen["examples"] = _example_review_rows(snapshot)
     mode = snapshot.simulation.simulation_mode
     _modes = ("deterministic", "monte_carlo", "both")
     screen["simOptions"] = list(_SIM_LABELS)
@@ -251,20 +341,28 @@ def build_guided_screen(
     if special is not None:
         return _attach_documents_panel(special, snapshot, step.step_id)
 
-    person = person_for_step(step.step_id)
+    screen = _step_meta(step, index=index, total=total)
+    fields: list[dict[str, Any]] = []
+    for field, field_person in guided_step_field_rows(snapshot, step.step_id):
+        if (
+            snapshot.household_mode == "joint"
+            and step.step_id == "timeline"
+            and field.key == "marriage_year"
+        ):
+            fields.append(_already_married_spec(snapshot))
+        spec = field_to_spec(snapshot, field, person=field_person, index=len(fields))
+        if snapshot.household_mode == "joint" and field.key == "marriage_year":
+            spec["showWhen"] = {"key": "already_married", "value": "no"}
+            spec["caption"] = "Use this year or a later year. If you are already married, choose Yes."
+        fields.append(spec)
+    screen["fields"] = fields
+    screen["help"] = [{"h": h, "p": p} for h, p in help_items_for_step(step.step_id)]
+    screen["wide"] = step.step_id in {"timeline", "market", "housing"}
+    screen["intro"] = STEP_GUIDED_INTROS.get(step.step_id, "")
     sub_index = snapshot.wizard.sub_step_positions.get(
         step.step_id,
         snapshot.wizard.sub_step_index,
     )
-    fields = fields_for_micro_screen(step.step_id, sub_index)
-    screen = _step_meta(step, index=index, total=total)
-    screen["fields"] = [
-        field_to_spec(snapshot, field, person=person, index=i)
-        for i, field in enumerate(fields)
-    ]
-    screen["help"] = [{"h": h, "p": p} for h, p in help_items_for_step(step.step_id)]
-    screen["wide"] = step.step_id in {"timeline", "market"}
-    screen["intro"] = STEP_GUIDED_INTROS.get(step.step_id, "")
     micro = micro_screen_meta(step.step_id, sub_index)
     if micro:
         screen.update(micro)

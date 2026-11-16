@@ -119,6 +119,7 @@ class GuidedApp:
             "assets_wife": "Money in",
             "spending_self": "Money out",
             "spending_wife": "Money out",
+            "housing": "Housing",
             "healthcare_self": "Health",
             "healthcare_wife": "Health",
             "tax_benefits": "Taxes & income",

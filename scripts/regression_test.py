@@ -4634,40 +4634,69 @@ def run_regression() -> RegressionReport:
 
         joint_blank = blank_planning_snapshot()
         joint_blank.household_mode = "joint"
+        joint_ages = [
+            {"key": "current_age", "value": "55", "person": "self"},
+            {"key": "current_age", "value": "53", "person": "wife"},
+            {"key": "life_expectancy", "value": "95"},
+        ]
         marriage_required = validate_guided_step(
             joint_blank,
             "timeline",
-            [
-                {"key": "current_age", "value": "55", "person": "self"},
-                {"key": "life_expectancy", "value": "95"},
-            ],
+            joint_ages,
             required=True,
         )
         assert not marriage_required["ok"]
-        assert any(row["key"] == "marriage_year" for row in marriage_required["field_errors"])
+        assert any(row["key"] == "already_married" for row in marriage_required["field_errors"])
 
+        already_married = validate_guided_step(
+            joint_blank,
+            "timeline",
+            [*joint_ages, {"key": "already_married", "value": "yes"}],
+            required=True,
+        )
+        assert already_married["ok"], already_married["errors"]
+
+        from datetime import date as _date
+
+        planned_year = str(_date.today().year + 1)
         marriage_ok = validate_guided_step(
             joint_blank,
             "timeline",
             [
-                {"key": "current_age", "value": "55", "person": "self"},
-                {"key": "life_expectancy", "value": "95"},
+                *joint_ages,
+                {"key": "already_married", "value": "no"},
+                {"key": "marriage_year", "value": planned_year},
+            ],
+            required=True,
+        )
+        assert marriage_ok["ok"], marriage_ok["errors"]
+
+        past_marriage = validate_guided_step(
+            joint_blank,
+            "timeline",
+            [
+                *joint_ages,
+                {"key": "already_married", "value": "no"},
                 {"key": "marriage_year", "value": "2010"},
             ],
             required=True,
         )
-        assert marriage_ok["ok"]
+        assert not past_marriage["ok"]
+        assert any(row["key"] == "marriage_year" for row in past_marriage["field_errors"])
 
+        session._persist = lambda: None
         session.go_to_step(timeline_idx)
         good = session.persist_step_values(
             [
                 {"key": "current_age", "value": "55", "person": "self", "scope": "person"},
                 {"key": "life_expectancy", "value": "95", "scope": "shared"},
-                {"key": "marriage_year", "value": "2010", "scope": "shared"},
+                {"key": "already_married", "value": "yes", "scope": "shared"},
             ],
             validate=True,
         )
-        assert good["ok"]
+        assert good["ok"], good
+        assert session.snapshot.shared["filing_status"] == "mfj"
+        assert not str(session.snapshot.shared.get("marriage_year") or "").strip()
 
         income_idx = next(
             i
@@ -5145,7 +5174,9 @@ def run_regression() -> RegressionReport:
 
         panel_ids = {d.get("id") for d in panel.get("documents") or []}
         assert "pay_stub" in panel_ids
-        assert "ssa_1099" in panel_ids
+        tax_docs = build_documents_panel(session.snapshot, step_id="tax_benefits")
+        tax_ids = {d.get("id") for d in tax_docs.get("documents") or []}
+        assert "ssa_1099" in tax_ids
 
         return f"AI Mode + guided docs + pay stub + SSA chart; {len(panel.get('documents') or [])} income sources"
 
@@ -5501,6 +5532,109 @@ def run_regression() -> RegressionReport:
         return f"{len(FIELD_UI_GROUP)} ui_groups, {len(FIELD_GUIDED_QUESTIONS)} guided questions"
 
     _run_check(report, "GUI", "Guided catalog completeness", check_guided_catalog_completeness)
+
+    def check_guided_screen_recommendations():
+        from datetime import date
+
+        from app.core.planning_snapshot import PlanningSnapshot, blank_planning_snapshot
+        from app.core.presentation import PlanningSession
+        from app.core.presentation.field_editor import field_to_spec
+        from app.core.presentation.guided_screens import build_guided_screen
+        from app.core.presentation.plan_completeness import compute_completeness
+        from app.core.presentation.simulation_results import results_headline
+        from app.core.ui_groups import fields_for_ui_group
+        from app.core.workflow_definition import WorkflowDefinition
+        from config.model_fields import FIELDS_BY_KEY
+
+        housing_keys = [field.key for field in fields_for_ui_group("housing")]
+        assert housing_keys[:3] == [
+            "mortgage_annual",
+            "mortgage_payoff_year",
+            "mortgage_payoff_month",
+        ]
+        assert "property_tax_annual" in housing_keys
+        assert "mortgage_annual" not in {field.key for field in fields_for_ui_group("spending_self")}
+        assert "mortgage_annual" not in {field.key for field in fields_for_ui_group("spending_wife")}
+
+        snapshot = PlanningSnapshot()
+        workflow = WorkflowDefinition(household_mode="joint", include_spouse=True)
+        housing = build_guided_screen(snapshot, workflow, index=workflow.index_of("housing"))
+        housing_text = " ".join(
+            f"{field['label']} {field.get('caption', '')}" for field in housing["fields"]
+        ).lower()
+        assert "principal and interest" in housing_text
+        assert "not escrow" in housing_text
+        assert "property tax" in housing_text
+
+        timeline = build_guided_screen(snapshot, workflow, index=workflow.index_of("timeline"))
+        pairs = [(field["key"], field.get("person")) for field in timeline["fields"]]
+        assert ("current_age", "wife") in pairs
+        married = next(field for field in timeline["fields"] if field["key"] == "already_married")
+        assert married["optionLabels"] == ["Yes", "Not yet"]
+        year = next(field for field in timeline["fields"] if field["key"] == "marriage_year")
+        assert "plan to marry" in year["label"].lower()
+        assert year["showWhen"] == {"key": "already_married", "value": "no"}
+
+        assets = build_guided_screen(snapshot, workflow, index=workflow.index_of("assets_self"))
+        sample = next(field for field in assets["fields"] if field["key"] == "initial_assets")
+        assert sample["example"] is True
+        assert sample["caption"].startswith("Example")
+        review = build_guided_screen(snapshot, workflow, index=workflow.index_of("review"))
+        example_keys = {row["field_key"] for row in review["examples"]}
+        assert {"current_age", "initial_assets", "base_expenses", "annual_earned_income", "ss_amount"} <= example_keys
+
+        filing = field_to_spec(snapshot, FIELDS_BY_KEY["filing_status"], person=None, index=0)
+        assert filing["options"][filing["optionLabels"].index("Married filing jointly")] == "mfj"
+        phase = field_to_spec(snapshot, FIELDS_BY_KEY["expense_phase_mode"], person=None, index=0)
+        assert "Change with age" in phase["optionLabels"]
+        assert "age_banded" in phase["options"]
+
+        blank = blank_planning_snapshot()
+        blank.household_mode = "joint"
+        missing = compute_completeness(blank, workflow)["missing"]
+        assert any(row["field_key"] == "marriage_year" and row["label"] == "Are you married?" for row in missing)
+        blank.shared["filing_status"] = "mfj"
+        blank.shared["marriage_year"] = ""
+        married_missing = compute_completeness(blank, workflow)["missing"]
+        assert not any(row["field_key"] == "marriage_year" for row in married_missing)
+
+        session = PlanningSession(blank_planning_snapshot())
+        session.snapshot.household_mode = "joint"
+        session._sync_workflow()
+        session._persist = lambda: None
+        session.go_to_step(session._workflow.index_of("timeline"))
+        planned = session.persist_step_values(
+            [
+                {"key": "current_age", "value": "55", "person": "self", "scope": "person"},
+                {"key": "current_age", "value": "53", "person": "wife", "scope": "person"},
+                {"key": "life_expectancy", "value": "95", "scope": "shared"},
+                {"key": "already_married", "value": "no", "scope": "shared"},
+                {"key": "marriage_year", "value": str(date.today().year + 2), "scope": "shared"},
+            ],
+            validate=True,
+        )
+        assert planned["ok"], planned
+        assert session.snapshot.shared["filing_status"] == "single"
+        assert session.snapshot.shared["filing_status_before_marriage"] == "single"
+        assert session.snapshot.shared["filing_status_after_marriage"] == "mfj"
+
+        headline = results_headline(
+            adviser={
+                "ok": True,
+                "goal_status": "Below target — 40% success rate vs 80% goal.",
+                "success_rate": 0.4,
+                "target_success_rate": 0.8,
+            },
+            tabs=[{"key": "joint", "monte_carlo": {"median_depletion_age": 82, "success_rate": 0.4}}],
+        )
+        assert headline["title"] == "You are not on track yet"
+        assert headline["tone"] == "warn"
+        assert "40 of 100" in headline["lines"][0]
+        assert "age 82" in headline["lines"][1]
+
+        return "spouse age, marriage, housing, examples, headline"
+
+    _run_check(report, "GUI", "Guided screen recommendations", check_guided_screen_recommendations)
 
     def check_workflow_spouse_steps():
         from app.core.workflow_definition import WorkflowDefinition

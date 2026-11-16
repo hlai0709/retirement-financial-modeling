@@ -288,6 +288,11 @@ def _completeness_satisfied(
     person: str | None,
     step_id: str,
 ) -> bool:
+    if field.key == "marriage_year":
+        from app.core.presentation.marriage_answer import marriage_answer
+
+        if marriage_answer(snapshot) == "yes":
+            return True
     # Completeness list only checks ss_amount; honor PIA / AIME / earnings modes.
     if field.key == "ss_amount" and person in {"self", "wife"}:
         if _ss_benefit_inputs_satisfied(snapshot, person=person):
@@ -365,11 +370,17 @@ def compute_completeness(snapshot: PlanningSnapshot, workflow: WorkflowDefinitio
             if _completeness_satisfied(snapshot, field, person=person, step_id=step_id):
                 filled += 1
             else:
+                label = field_display_label(field, person=person)
+                if field.key == "marriage_year":
+                    from app.core.presentation.marriage_answer import marriage_answer
+
+                    if marriage_answer(snapshot) != "no":
+                        label = "Are you married?"
                 missing.append(
                     {
                         "field_key": spec.field_key,
                         "person": person,
-                        "label": field_display_label(field, person=person),
+                        "label": label,
                         "step_id": step_id,
                         "step_index": workflow.index_of(step_id),
                         "group": group.label,

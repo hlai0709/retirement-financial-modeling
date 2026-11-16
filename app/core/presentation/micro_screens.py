@@ -100,6 +100,7 @@ _MICRO_SCREEN_FIELD_KEYS: dict[str, tuple[tuple[str, tuple[str, ...]], ...]] = {
         ("Deductions & state tax", (
             "itemized_salt_annual",
             "itemized_mortgage_interest",
+            "itemized_mortgage_interest_second",
             "itemized_charitable",
             "itemized_medical",
             "state_move_year",

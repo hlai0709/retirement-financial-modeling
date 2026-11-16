@@ -127,6 +127,14 @@ def _deterministic_summary(df: pd.DataFrame) -> dict[str, Any]:
     ending = _json_num(df[balance_col].iloc[-1]) or 0
     starting = _json_num(df[start_col].iloc[0]) if start_col else ending
     peak = _json_num(df[balance_col].max()) or 0
+    age_col = _col(df, "Age", "age")
+    depletion_age = None
+    if age_col is not None:
+        for _, row in df.iterrows():
+            balance = row[balance_col]
+            if pd.notna(balance) and float(balance) <= 0:
+                depletion_age = _json_num(row[age_col])
+                break
     notes_col = _col(df, "Formula_Notes", "formula_notes")
     deceased = False
     if notes_col:
@@ -136,6 +144,7 @@ def _deterministic_summary(df: pd.DataFrame) -> dict[str, Any]:
         "starting_balance": starting or 0,
         "ending_balance": ending,
         "peak_balance": peak,
+        "depletion_age": depletion_age,
         "chart": _sample_deterministic_chart(df),
         "table": _sample_table_rows(df),
         "export_rows": _dataframe_export_rows(df),
@@ -266,6 +275,62 @@ def results_tab_label(key: str) -> str:
     return RESULTS_TAB_LABELS.get(key, key.replace("_", " ").title())
 
 
+def _plain_success(rate: float, target: float | None) -> str:
+    pct = int(round(float(rate) * 100))
+    if pct >= 100:
+        sentence = "Every simulated future keeps the money through the plan."
+    elif pct <= 0:
+        sentence = "None of the simulated futures keep the money through the plan."
+    else:
+        sentence = f"{pct} of 100 simulated futures keep the money through the plan."
+    if target is None:
+        return sentence
+    target_pct = int(round(float(target) * 100))
+    return sentence[:-1] + f", against a target of {target_pct}."
+
+
+def results_headline(
+    *,
+    adviser: dict[str, Any] | None,
+    tabs: list[dict[str, Any]],
+) -> dict[str, Any]:
+    """On track or not, in plain words, before the charts."""
+    primary = next((tab for tab in tabs if tab.get("key") == "joint"), tabs[0] if tabs else {})
+    monte = primary.get("monte_carlo") or {}
+    deterministic = primary.get("deterministic") or {}
+    status = str((adviser or {}).get("goal_status") or "")
+    adviser_ok = bool((adviser or {}).get("ok"))
+    title = "Here is where the plan stands"
+    tone = "neutral"
+    if adviser_ok and status.startswith("On track"):
+        title = "You are on track"
+        tone = "ok"
+    elif adviser_ok and (status.startswith("Below target") or "depletes assets" in status):
+        title = "You are not on track yet"
+        tone = "warn"
+
+    lines: list[str] = []
+    rate = None
+    target = None
+    if adviser_ok and (adviser or {}).get("success_rate") is not None:
+        rate = adviser.get("success_rate")
+        target = adviser.get("target_success_rate")
+    elif monte.get("success_rate") is not None:
+        rate = monte.get("success_rate")
+    if rate is not None:
+        lines.append(_plain_success(float(rate), float(target) if target is not None else None))
+
+    depletion = monte.get("median_depletion_age")
+    if depletion is not None:
+        lines.append(f"When the money runs out, it is usually around age {int(round(float(depletion)))}.")
+    elif deterministic.get("depletion_age") is not None:
+        age = int(round(float(deterministic["depletion_age"])))
+        lines.append(f"In this projection, the money runs out at age {age}.")
+    elif deterministic and not monte and float(deterministic.get("ending_balance") or 0) > 0:
+        lines.append("In this projection, the money lasts through the plan.")
+    return {"title": title, "tone": tone, "lines": lines}
+
+
 def serialize_simulation_result(
     payload: SimulationRunResult,
     *,
@@ -301,11 +366,13 @@ def serialize_simulation_result(
                 alerts.append(f"{label}: assets stayed at zero — review income, assets, and ages.")
         tabs.append(tab)
 
+    adviser = _serialize_adviser(payload, risk_tolerance=risk_tolerance, holdings=holdings)
     return {
         "mode": output.mode,
         "risk_tolerance": risk_tolerance,
         "tabs": tabs,
-        "adviser": _serialize_adviser(payload, risk_tolerance=risk_tolerance, holdings=holdings),
+        "adviser": adviser,
+        "headline": results_headline(adviser=adviser, tabs=tabs),
         "warnings": payload.warnings,
         "alerts": alerts,
     }

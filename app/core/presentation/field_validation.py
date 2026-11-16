@@ -6,7 +6,6 @@ from typing import Any
 
 from app.core.controllers.llm_research_controller import field_display_label
 from app.core.planning_snapshot import PlanningSnapshot
-from app.core.presentation.micro_screens import fields_for_micro_screen
 from config.field_values import parse_field_value
 from config.model_fields import ModelField, field_choice_values
 
@@ -203,7 +202,11 @@ def _update_lookup_key(key: str, person: str | None) -> str:
 
 def _is_field_optional(field: ModelField, snapshot: PlanningSnapshot) -> bool:
     if field.key == "marriage_year":
-        return snapshot.household_mode != "joint"
+        if snapshot.household_mode != "joint":
+            return True
+        from app.core.presentation.marriage_answer import marriage_answer
+
+        return marriage_answer(snapshot) == "yes"
     return field.key in _OPTIONAL_FIELD_KEYS
 
 
@@ -230,7 +233,12 @@ def _wizard_step_for_field(field: ModelField, *, person: str | None) -> str:
     return ui_group_for_field(field, person=person)
 
 
-def _required_fields_for_step(snapshot: PlanningSnapshot, step_id: str) -> set[tuple[str, str | None]]:
+def _required_fields_for_step(
+    snapshot: PlanningSnapshot,
+    step_id: str,
+    updates: list[dict[str, Any]] | None = None,
+) -> set[tuple[str, str | None]]:
+    from app.core.presentation.marriage_answer import marriage_answer_for_validation
     from app.core.presentation.plan_completeness import _group_fields, _groups_for_mode, _resolve_check_field
 
     joint = snapshot.household_mode == "joint"
@@ -240,10 +248,12 @@ def _required_fields_for_step(snapshot: PlanningSnapshot, step_id: str) -> set[t
             field, person = _resolve_check_field(spec)
             if field is None or _is_field_optional(field, snapshot):
                 continue
+            if field.key == "marriage_year" and marriage_answer_for_validation(snapshot, updates) != "no":
+                continue
             if _wizard_step_for_field(field, person=person) != step_id:
                 continue
             required.add((field.key, person))
-    if step_id == "timeline" and joint:
+    if step_id == "timeline" and joint and marriage_answer_for_validation(snapshot, updates) == "no":
         required.add(("marriage_year", None))
     return required
 
@@ -320,22 +330,11 @@ def visible_fields_for_step(
     step_id: str,
 ) -> list[tuple[ModelField, str | None]]:
     """Return (field, person) pairs shown on the current wizard step."""
-    from app.core.presentation.field_editor import person_for_step
-
     if step_id in {"setup", "live_data", "llm_assist", "import_documents", "review"}:
         return []
-    person = person_for_step(step_id)
-    sub_index = snapshot.wizard.sub_step_positions.get(
-        step_id,
-        snapshot.wizard.sub_step_index,
-    )
-    rows: list[tuple[ModelField, str | None]] = []
-    for field in fields_for_micro_screen(step_id, sub_index):
-        field_person = person if field.scope == "person" else None
-        if field.scope == "person" and field_person is None:
-            field_person = "self"
-        rows.append((field, field_person))
-    return rows
+    from app.core.presentation.guided_screens import guided_step_field_rows
+
+    return guided_step_field_rows(snapshot, step_id)
 
 
 def _cross_field_errors(
@@ -344,6 +343,7 @@ def _cross_field_errors(
     values: dict[str, str],
     *,
     visible: list[tuple[ModelField, str | None]],
+    updates: list[dict[str, Any]] | None = None,
 ) -> list[dict[str, Any]]:
     """Step-level checks involving multiple fields — only when those fields are on this screen."""
     from app.core.presentation.field_editor import person_for_step, resolve_field
@@ -376,6 +376,42 @@ def _cross_field_errors(
         return parsed
 
     if step_id == "timeline":
+        if snapshot.household_mode == "joint":
+            from datetime import date
+
+            from app.core.presentation.marriage_answer import marriage_answer_for_validation
+
+            answer = marriage_answer_for_validation(snapshot, updates)
+            if answer == "":
+                errors.append(
+                    {
+                        "key": "already_married",
+                        "person": None,
+                        "label": "Are you married?",
+                        "message": "Choose Yes or Not yet",
+                    }
+                )
+            elif answer == "no":
+                raw = values.get(_update_lookup_key("marriage_year", None))
+                year_field = resolve_field("marriage_year")
+                if raw is None and year_field is not None:
+                    raw = snapshot.get_raw(year_field)
+                if year_field is not None and raw and not _is_effectively_empty(
+                    year_field, raw, snapshot=snapshot
+                ):
+                    try:
+                        year = int(parse_field_value(year_field, _normalize_raw(year_field, raw)))
+                    except (TypeError, ValueError):
+                        year = None
+                    if year is not None and year < date.today().year:
+                        errors.append(
+                            {
+                                "key": "marriage_year",
+                                "person": None,
+                                "label": "In what year do you plan to marry?",
+                                "message": "Enter this year or a future year. If you are already married, choose Yes.",
+                            }
+                        )
         person = person_for_step(step_id) or "self"
         current = _age_value("current_age", person)
         life_field = resolve_field("life_expectancy")
@@ -451,7 +487,13 @@ def validate_guided_step(
             person = row.get("person") if field.scope == "person" else None
             value_map[_update_lookup_key(str(key), person)] = str(row.get("value", ""))
 
-    required_fields = _required_fields_for_step(snapshot, step_id) if required else set()
+    if snapshot.household_mode == "joint" and step_id == "timeline":
+        from app.core.presentation.marriage_answer import marriage_answer_for_validation
+
+        if marriage_answer_for_validation(snapshot, updates) == "yes":
+            value_map[_update_lookup_key("marriage_year", None)] = ""
+
+    required_fields = _required_fields_for_step(snapshot, step_id, updates) if required else set()
     field_errors: list[dict[str, Any]] = []
     for field, person in visible:
         raw = value_map.get(_update_lookup_key(field.key, person))
@@ -475,7 +517,9 @@ def validate_guided_step(
                 }
             )
 
-    field_errors.extend(_cross_field_errors(snapshot, step_id, value_map, visible=visible))
+    field_errors.extend(
+        _cross_field_errors(snapshot, step_id, value_map, visible=visible, updates=updates)
+    )
 
     seen: set[tuple[str, str | None]] = set()
     deduped: list[dict[str, Any]] = []

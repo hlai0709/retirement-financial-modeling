@@ -37,6 +37,7 @@ from app.core.presentation.llm_panel import apply_llm_suggestions, build_llm_pan
 from app.core.presentation.data_sources_summary import build_data_sources_summary
 from app.core.presentation.field_derived import apply_derived_fields
 from app.core.presentation.field_validation import validate_guided_step, validate_updates
+from app.core.presentation.marriage_answer import apply_marriage_answer, catalog_updates_for_marriage
 from app.core.presentation.plan_completeness import (
     build_journey_rail,
     compute_completeness,
@@ -469,6 +470,7 @@ class PlanningSession:
 
         step_id = step.step_id
         step_check = validate_guided_step(self.snapshot, step_id, updates, required=True)
+        catalog_updates = catalog_updates_for_marriage(self.snapshot, updates)
         if not step_check["ok"]:
             return {"ok": False, **step_check}
 
@@ -479,7 +481,7 @@ class PlanningSession:
                 person=row.get("person"),
                 scope=row.get("scope"),
             )
-            for row in updates
+            for row in catalog_updates
             if row.get("key")
         ]
         field_errors = apply_updates(self.snapshot, parsed)
@@ -489,8 +491,9 @@ class PlanningSession:
                 "errors": [f"{row['label']}: {row['message']}" for row in field_errors],
                 "field_errors": field_errors,
             }
-        mark_updates_touched(self.snapshot, updates)
-        apply_derived_fields(self.snapshot, updates=updates)
+        apply_marriage_answer(self.snapshot, updates)
+        mark_updates_touched(self.snapshot, catalog_updates)
+        apply_derived_fields(self.snapshot, updates=catalog_updates)
         self._persist()
         return {"ok": True}
 
@@ -532,7 +535,8 @@ class PlanningSession:
                     state = str(row.get("value", state))
             return self.persist_setup(household, state)
 
-        for row in updates:
+        catalog_updates = catalog_updates_for_marriage(self.snapshot, updates)
+        for row in catalog_updates:
             key = row.get("key")
             if not key:
                 continue
@@ -550,8 +554,9 @@ class PlanningSession:
             if field.field_type == "rate_pct":
                 raw = raw.replace("%", "").strip()
             self.snapshot.set_raw(field, raw, person=person)
-        mark_updates_touched(self.snapshot, updates)
-        apply_derived_fields(self.snapshot, updates=updates)
+        apply_marriage_answer(self.snapshot, updates)
+        mark_updates_touched(self.snapshot, catalog_updates)
+        apply_derived_fields(self.snapshot, updates=catalog_updates)
         self._persist()
         return {"ok": True}
 

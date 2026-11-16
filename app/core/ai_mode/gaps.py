@@ -169,6 +169,11 @@ def build_ai_mode_gaps(
     for field_key, person, step_id in _CORE_CHECKS:
         if field_key == "marriage_year" and not joint:
             continue
+        if field_key == "marriage_year" and joint:
+            from app.core.presentation.marriage_answer import marriage_answer
+
+            if marriage_answer(snapshot) == "yes":
+                continue
         # SS start age handled with mode-aware helper below
         if field_key == "ss_start_age":
             continue
@@ -209,7 +214,9 @@ def build_ai_mode_gaps(
                 continue
             jump = step_for.get(pers, step_id) if isinstance(step_for, dict) else step_id
             note = ""
-            if field_key == "health_insurance_pre_medicare":
+            if field_key == "marriage_year":
+                note = "Choose Yes if you are already married, or enter the year you plan to marry."
+            elif field_key == "health_insurance_pre_medicare":
                 note = (
                     "Upload a recent pay stub (Medical/Dental/Vision) or set Employer Health Monthly "
                     "in Guided — or enter annual pre-Medicare premium if you buy coverage yourself"

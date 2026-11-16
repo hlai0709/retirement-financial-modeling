@@ -6,12 +6,13 @@ from config.model_fields import ModelField
 
 # Step-level intro shown above fields in guided mode.
 STEP_GUIDED_INTROS: dict[str, str] = {
-    "timeline": "Start with your age, retirement timing, and how long we should model your plan.",
+    "timeline": "Start with your age. For a couple, add your spouse's age, and say whether you are already married.",
     "income_self": "Tell us about your work income and how much you're saving toward retirement.",
     "income_wife": "Now the same details for your spouse's income and savings.",
     "assets_self": "What do you have saved today, and how is it split across account types?",
     "assets_wife": "Enter your spouse's current savings and account mix.",
-    "spending_self": "How much do you expect to spend in retirement, including housing and one-time costs?",
+    "spending_self": "How much do you expect to spend in retirement, aside from the mortgage and property tax?",
+    "housing": "Enter the household's mortgages and property tax once. Payments are principal and interest only, not escrow.",
     "spending_wife": "Enter your spouse's expected retirement spending.",
     "healthcare_self": "Healthcare costs often dominate retirement — employer coverage, Medicare, and long-term care.",
     "healthcare_wife": "Enter healthcare assumptions for your spouse.",
@@ -64,9 +65,13 @@ FIELD_GUIDED_QUESTIONS: dict[str, str] = {
     "expense_go_go_pct": "What percentage of Base Expenses applies in Go-Go years? (Can be derived: permanent bills stay; lifestyle steps down. Mortgage is separate until payoff.)",
     "expense_slow_go_pct": "What percentage of Base Expenses applies in Slow-Go years?",
     "expense_no_go_pct": "What percentage of Base Expenses applies in No-Go years?",
-    "mortgage_annual": "What is your annual mortgage payment?",
-    "mortgage_payoff_year": "In what year will your mortgage be paid off?",
-    "property_tax_annual": "What is your annual property tax (all properties combined)?",
+    "mortgage_annual": "What do you pay each year on the first mortgage, principal and interest only?",
+    "mortgage_payoff_year": "In what year is the first mortgage paid off?",
+    "mortgage_payoff_month": "In which month is the last payment on the first mortgage?",
+    "mortgage_second_annual": "What do you pay each year on a second mortgage, principal and interest only?",
+    "mortgage_second_payoff_year": "In what year is the second mortgage paid off?",
+    "mortgage_second_payoff_month": "In which month is the last payment on the second mortgage?",
+    "property_tax_annual": "What do you pay in property tax each year?",
     "one_time_expense_year": "Is there a one-time expense? Enter the year (or leave blank).",
     "one_time_expense_amount": "How much is the one-time expense?",
     "long_term_care_annual": "What annual long-term care cost should we plan for?",
@@ -159,8 +164,13 @@ FIELD_GUIDED_ORDER: dict[str, int] = {
     "expense_go_go_pct": 50,
     "expense_slow_go_pct": 60,
     "expense_no_go_pct": 70,
-    "mortgage_annual": 80,
-    "mortgage_payoff_year": 90,
+    "mortgage_annual": 10,
+    "mortgage_payoff_year": 20,
+    "mortgage_payoff_month": 30,
+    "mortgage_second_annual": 40,
+    "mortgage_second_payoff_year": 50,
+    "mortgage_second_payoff_month": 60,
+    "property_tax_annual": 70,
     "one_time_expense_year": 100,
     "one_time_expense_amount": 110,
     "long_term_care_annual": 120,
@@ -184,7 +194,7 @@ def guided_question_for_field(
     if person == "wife" and field.key in WIFE_GUIDED_QUESTIONS:
         return WIFE_GUIDED_QUESTIONS[field.key]
     if field.key == "marriage_year" and household_mode == "joint":
-        return "In what year did you marry?"
+        return "In what year do you plan to marry?"
     question = FIELD_GUIDED_QUESTIONS.get(field.key)
     if question:
         return question
