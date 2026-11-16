@@ -492,9 +492,68 @@ def run_regression() -> RegressionReport:
         done = itemized_for_year(itemized, {"self": {"mortgage_payoff_year": 2030}}, 2031)
         assert still.mortgage_interest == 12_000
         assert done.mortgage_interest == 0
+
+        parked = ItemizedInputs(mortgage_interest_second=4_000)
+        one_loan = {"self": {"mortgage_annual": 24_000, "mortgage_payoff_year": 2030}}
+        during = itemized_for_year(parked, one_loan, 2030)
+        after = itemized_for_year(parked, one_loan, 2031)
+        assert during.mortgage_interest_second == 4_000
+        assert after.mortgage_interest_second == 0
+        open_loan = {"self": {"mortgage_annual": 24_000}}
+        assert itemized_for_year(parked, open_loan, 2040).mortgage_interest_second == 4_000
+
+        both = ItemizedInputs(mortgage_interest=9_000, mortgage_interest_second=4_000)
+        two_loans = {
+            "self": {
+                "mortgage_annual": 24_000,
+                "mortgage_payoff_year": 2030,
+                "mortgage_second_annual": 12_000,
+                "mortgage_second_payoff_year": 2040,
+            }
+        }
+        between = itemized_for_year(both, two_loans, 2035)
+        assert between.mortgage_interest == 0
+        assert between.mortgage_interest_second == 4_000
+        assert itemized_for_year(both, two_loans, 2041).mortgage_interest_second == 0
         return "itemized interest is zero the year after payoff"
 
     _run_check(report, "Core", "Itemized interest ends at payoff", check_interest_stops_after_payoff)
+
+    def check_1098_on_empty_plan_does_not_create_payment():
+        from dataclasses import dataclass
+
+        from app.core.lazy_mode.orchestrator import _stack_mortgage_if_needed
+        from app.core.planning_snapshot import PlanningSnapshot
+
+        @dataclass
+        class Suggestion:
+            field_key: str
+            raw_value: str
+            source_quote: str = ""
+            display_value: str = ""
+
+        rows = _stack_mortgage_if_needed(
+            PlanningSnapshot(),
+            [
+                Suggestion("mortgage_annual", "24000", "payment coupon"),
+                Suggestion("itemized_mortgage_interest", "9000", "box 1"),
+                Suggestion("mortgage_payoff_year", "2050", "maturity"),
+            ],
+            document_id="form_1098",
+            person="self",
+        )
+        keys = [row.field_key for row in rows]
+        assert "mortgage_annual" not in keys
+        assert "itemized_mortgage_interest" in keys
+        assert "mortgage_payoff_year" in keys
+        return "a 1098 on an empty plan records interest, not a payment"
+
+    _run_check(
+        report,
+        "Core",
+        "A 1098 on an empty plan does not create a payment",
+        check_1098_on_empty_plan_does_not_create_payment,
+    )
 
     def check_each_person_rmd_uses_own_age():
         from model.accounts import AccountBalances, HouseholdLedger

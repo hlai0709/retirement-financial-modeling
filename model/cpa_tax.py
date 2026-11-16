@@ -151,7 +151,8 @@ def itemized_for_year(
 
     A single combined interest amount, with no second-loan figure, still lasts
     until the later payoff. A payment with a blank payoff year does not turn
-    its interest off.
+    its interest off. Interest parked on the second field when there is no
+    second loan ends with the first loan.
     """
     from dataclasses import replace
 
@@ -170,8 +171,10 @@ def itemized_for_year(
             second_limits.append(second)
     if itemized.mortgage_interest_second > 0:
         first_amount = _interest_remaining(itemized.mortgage_interest, first_limits, year)
+        # No second loan means there is no payoff of its own. Use the first.
+        second_scope = second_limits or first_limits
         second_amount = _interest_remaining(
-            itemized.mortgage_interest_second, second_limits, year
+            itemized.mortgage_interest_second, second_scope, year
         )
     else:
         first_amount = _interest_remaining(
