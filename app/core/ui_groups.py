@@ -117,6 +117,7 @@ FIELD_UI_GROUP: dict[str, str] = {
     "survivor_filing_status": "tax_benefits",
     "itemized_salt_annual": "tax_benefits",
     "itemized_mortgage_interest": "tax_benefits",
+    "itemized_mortgage_interest_second": "tax_benefits",
     "itemized_charitable": "tax_benefits",
     "itemized_medical": "tax_benefits",
     "tax_calculation": "tax_benefits",

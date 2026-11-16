@@ -689,6 +689,17 @@ def run_regression() -> RegressionReport:
         assert rows["mortgage_annual"].confidence == "high"
         assert rows["itemized_mortgage_interest"].confidence == "low"
         assert rows["mortgage_payoff_year"].raw_value in {"2052", "2052.0"}
+        from app.core.document_ingestion.ingestion_controller import build_review_rows
+
+        ytd_review = build_review_rows(
+            PlanningSnapshot(),
+            extract_mortgage_statement_suggestions(statement),
+            document_label="statement.pdf",
+        )
+        ytd_interest = next(
+            row for row in ytd_review if row["field_key"] == "itemized_mortgage_interest"
+        )
+        assert ytd_interest["apply"] is False
 
         form_rows = {
             row.field_key: row
@@ -715,6 +726,68 @@ def run_regression() -> RegressionReport:
         only_installment = extract_property_tax_bill_suggestions("First installment $4,000.00")
         doubled = float(str(only_installment[0].raw_value).replace(",", "").replace("$", ""))
         assert abs(doubled - 8_000) < 1, doubled
+
+        different_maturity = _stack_mortgage_if_needed(
+            snapshot,
+            [
+                Suggestion("mortgage_annual", "25000", "similar payment"),
+                Suggestion("mortgage_payoff_year", "2040", "other maturity"),
+            ],
+            document_id="mortgage_statement",
+            person="self",
+        )
+        by_key = {item.field_key: item for item in different_maturity}
+        assert by_key["mortgage_second_annual"].raw_value == "25000"
+        assert by_key["mortgage_second_payoff_year"].field_key == "mortgage_second_payoff_year"
+
+        refinance = _stack_mortgage_if_needed(
+            snapshot,
+            [
+                Suggestion("mortgage_annual", "40000", "rate reset"),
+                Suggestion("mortgage_payoff_year", "2050", "same maturity"),
+            ],
+            document_id="mortgage_statement",
+            person="self",
+        )
+        assert refinance[0].field_key == "mortgage_annual"
+        assert refinance[0].raw_value == "40000"
+
+        snapshot.set_raw(FIELDS_BY_KEY["mortgage_second_annual"], "18000", person="self")
+        snapshot.set_source("self", "mortgage_second_annual", "Mortgage statement import")
+        snapshot.set_raw(FIELDS_BY_KEY["mortgage_second_payoff_year"], "2040", person="self")
+        refresh_second = _stack_mortgage_if_needed(
+            snapshot,
+            [
+                Suggestion("mortgage_annual", "19000", "next month"),
+                Suggestion("mortgage_payoff_year", "2040", "same second loan"),
+            ],
+            document_id="mortgage_statement",
+            person="self",
+        )
+        refreshed = {item.field_key: item for item in refresh_second}
+        assert refreshed["mortgage_second_annual"].raw_value == "19000"
+        assert "mortgage_annual" not in refreshed
+
+        snapshot.set_raw(FIELDS_BY_KEY["itemized_mortgage_interest"], "9000")
+        form_second = _stack_mortgage_if_needed(
+            snapshot,
+            [
+                Suggestion("itemized_mortgage_interest", "4000", "second 1098"),
+                Suggestion("mortgage_payoff_year", "2040", "second maturity"),
+                Suggestion("mortgage_payoff_month", "6", "june"),
+            ],
+            document_id="form_1098",
+            person="self",
+        )
+        form_by_key = {item.field_key: item for item in form_second}
+        assert "mortgage_payoff_year" not in form_by_key
+        assert form_by_key["mortgage_second_payoff_year"].raw_value == "2040"
+        assert form_by_key["itemized_mortgage_interest_second"].raw_value == "4000"
+        assert "itemized_mortgage_interest" not in form_by_key
+
+        snapshot.set_raw(FIELDS_BY_KEY["mortgage_second_annual"], "0", person="self")
+        snapshot.set_raw(FIELDS_BY_KEY["mortgage_second_payoff_year"], "", person="self")
+        snapshot.set_raw(FIELDS_BY_KEY["itemized_mortgage_interest"], "0")
         from app.core.document_ingestion.ingestion_controller import apply_document_import
 
         first = apply_document_import(
@@ -781,6 +854,22 @@ def run_regression() -> RegressionReport:
         )
         assert tax_apply["ok"]
         assert snapshot.get_raw(FIELDS_BY_KEY["property_tax_annual"], person="self") == "11000"
+        refresh_bill = apply_document_import(
+            snapshot,
+            [
+                {
+                    "apply": True,
+                    "field_key": "property_tax_annual",
+                    "raw_value": "8200",
+                    "person": "self",
+                    "source": "Imported from parcel.pdf",
+                }
+            ],
+            document_type="property_tax_bill",
+            document_label="parcel-refresh.pdf",
+        )
+        assert refresh_bill["ok"]
+        assert snapshot.get_raw(FIELDS_BY_KEY["property_tax_annual"], person="self") == "11200"
         return "same loan refreshes; a second loan stacks; 1098 does not add a payment"
 
     _run_check(
@@ -937,6 +1026,225 @@ def run_regression() -> RegressionReport:
         "Core",
         "Deleting an import restores the fields it filled",
         check_delete_restores_applied_import,
+    )
+
+    def check_delete_after_refresh_restores_original():
+        from app.core.lazy_mode.document_library import merge_applied_revert, remove_entry
+        from app.core.planning_snapshot import PlanningSnapshot
+        from config.model_fields import FIELDS_BY_KEY
+
+        merged = merge_applied_revert(
+            [
+                {
+                    "field_key": "mortgage_annual",
+                    "person": "self",
+                    "previous": "10000",
+                    "previous_source": "Manual",
+                    "applied": "24000",
+                }
+            ],
+            [
+                {
+                    "field_key": "mortgage_annual",
+                    "person": "self",
+                    "previous": "24000",
+                    "previous_source": "Imported from statement.pdf",
+                    "applied": "25000",
+                }
+            ],
+        )
+        assert merged[0]["previous"] == "10000"
+        assert merged[0]["applied"] == "25000"
+        snapshot = PlanningSnapshot()
+        field = FIELDS_BY_KEY["mortgage_annual"]
+        snapshot.set_raw(field, "25000", person="self")
+        snapshot.document_library.append(
+            {
+                "id": "doc-1",
+                "document_id": "mortgage_statement",
+                "person": "self",
+                "content_hash": "abc",
+                "status": "applied",
+                "original_name": "statement.pdf",
+                "stored_path": "",
+                "applied_revert": merged,
+            }
+        )
+        result = remove_entry(snapshot, "doc-1")
+        assert result["reverted"] == 1
+        assert snapshot.get_raw(field, person="self") == "10000"
+        return "refresh keeps the pre-import value for delete"
+
+    _run_check(
+        report,
+        "Core",
+        "Delete after a refresh restores the original value",
+        check_delete_after_refresh_restores_original,
+    )
+
+    def check_survivor_benefit_starts_at_death():
+        from model import run_retirement_projection
+
+        def project(self_age: int):
+            params = _sample_params()
+            params["inflation_rate"] = 0.0
+            params["investment_return_mean"] = 0.0
+            params["state_tax_enabled"] = False
+            params["tax_calculation"] = "flat"
+            params["post_retire_tax_rate"] = 0.0
+            params["medicare_enabled"] = False
+            self_p = params["persons"]["self"]
+            wife_p = params["persons"]["wife"]
+            self_p.update(
+                current_age=self_age,
+                retirement_age=65,
+                life_expectancy=90,
+                base_expenses=40_000,
+                ss_amount=20_000,
+                ss_start_age=67,
+                pension_amount=0,
+                rental_income_start=0,
+                annual_contributions=0,
+                health_insurance_post_retire=0,
+                health_insurance_pre_medicare=0,
+                long_term_care_annual=0,
+            )
+            wife_p.update(
+                current_age=68,
+                retirement_age=65,
+                life_expectancy=67,
+                base_expenses=0,
+                ss_amount=40_000,
+                ss_start_age=70,
+                pension_amount=0,
+                rental_income_start=0,
+                annual_contributions=0,
+                health_insurance_post_retire=0,
+                health_insurance_pre_medicare=0,
+                long_term_care_annual=0,
+            )
+            return run_retirement_projection(params)["joint"].iloc[0]
+
+        eligible = project(61)
+        too_young = project(58)
+        assert abs(eligible["SS"] - 40_000) < 1, eligible["SS"]
+        assert abs(too_young["SS"]) < 1, too_young["SS"]
+        return f"survivor SS ${eligible['SS']:,.0f} at 61, ${too_young['SS']:,.0f} at 58"
+
+    _run_check(
+        report,
+        "Core",
+        "Survivor benefit starts at death with an age floor",
+        check_survivor_benefit_starts_at_death,
+    )
+
+    def check_deceased_pension_stops():
+        from model import run_retirement_projection
+
+        params = _sample_params()
+        params["inflation_rate"] = 0.0
+        params["investment_return_mean"] = 0.0
+        params["state_tax_enabled"] = False
+        params["tax_calculation"] = "flat"
+        params["post_retire_tax_rate"] = 0.0
+        params["medicare_enabled"] = False
+        self_p = params["persons"]["self"]
+        wife_p = params["persons"]["wife"]
+        self_p.update(
+            current_age=87,
+            retirement_age=65,
+            life_expectancy=90,
+            base_expenses=40_000,
+            ss_amount=0,
+            pension_amount=0,
+            rental_income_start=0,
+            annual_contributions=0,
+            health_insurance_post_retire=0,
+            health_insurance_pre_medicare=0,
+            long_term_care_annual=0,
+        )
+        wife_p.update(
+            current_age=87,
+            retirement_age=65,
+            life_expectancy=86,
+            base_expenses=0,
+            ss_amount=0,
+            pension_amount=25_000,
+            pension_start_age=65,
+            rental_income_start=0,
+            annual_contributions=0,
+            health_insurance_post_retire=0,
+            health_insurance_pre_medicare=0,
+            long_term_care_annual=0,
+        )
+        row = run_retirement_projection(params)["joint"].iloc[0]
+        assert abs(row["Pension"]) < 1, row["Pension"]
+        assert row["Withdrawals_Gross"] > 35_000, row["Withdrawals_Gross"]
+        return (
+            f"deceased pension ${row['Pension']:,.0f}, "
+            f"withdrawal ${row['Withdrawals_Gross']:,.0f}"
+        )
+
+    _run_check(
+        report,
+        "Core",
+        "A deceased spouse's pension stops",
+        check_deceased_pension_stops,
+    )
+
+    def check_paycheck_withholding_is_not_spendable():
+        from model import run_retirement_projection
+
+        params = _sample_params()
+        params["inflation_rate"] = 0.0
+        params["investment_return_mean"] = 0.0
+        params["state_tax_enabled"] = False
+        params["tax_calculation"] = "flat"
+        params["post_retire_tax_rate"] = 0.0
+        params["pre_retire_tax_rate"] = 0.0
+        params["medicare_enabled"] = False
+        params["working_year_tax_enabled"] = True
+        params["contribution_roth_pct"] = 0.0
+        self_p = params["persons"]["self"]
+        wife_p = params["persons"]["wife"]
+        self_p.update(
+            current_age=70,
+            retirement_age=65,
+            life_expectancy=90,
+            base_expenses=90_000,
+            ss_amount=0,
+            pension_amount=0,
+            rental_income_start=0,
+            annual_contributions=0,
+            annual_earned_income=0,
+            health_insurance_post_retire=0,
+            health_insurance_pre_medicare=0,
+            long_term_care_annual=0,
+        )
+        wife_p.update(
+            current_age=55,
+            retirement_age=65,
+            life_expectancy=90,
+            base_expenses=0,
+            ss_amount=0,
+            pension_amount=0,
+            rental_income_start=0,
+            annual_contributions=20_000,
+            annual_earned_income=100_000,
+            health_insurance_post_retire=0,
+            health_insurance_pre_medicare=0,
+            long_term_care_annual=0,
+        )
+        row = run_retirement_projection(params)["joint"].iloc[0]
+        # $100k wages - $7,650 FICA - $20k contribution leaves $72,350 of a $90k budget.
+        assert 15_000 < row["Withdrawals_Gross"] < 20_000, row["Withdrawals_Gross"]
+        return f"partial-retirement withdrawal ${row['Withdrawals_Gross']:,.0f}"
+
+    _run_check(
+        report,
+        "Core",
+        "FICA and contributions are not spendable wages",
+        check_paycheck_withholding_is_not_spendable,
     )
 
     # --- Phase 1: Security + data layer ---

@@ -258,6 +258,9 @@ def tax_policy_from_params(params: dict[str, Any]) -> TaxPolicy:
             mortgage_interest=float(params.get("itemized_mortgage_interest", 0) or 0),
             charitable=float(params.get("itemized_charitable", 0) or 0),
             medical=float(params.get("itemized_medical", 0) or 0),
+            mortgage_interest_second=float(
+                params.get("itemized_mortgage_interest_second", 0) or 0
+            ),
         ),
     )
 
@@ -542,19 +545,34 @@ def deceased_base_carry(
     return total
 
 
+SURVIVOR_BENEFIT_AGE = 60
+
+
 def social_security_gross(
     flows: dict[str, PersonFlows],
     living: list[str],
     names: list[str],
+    ages: dict[str, int] | None = None,
 ) -> float:
-    """Benefits in pay. A sole survivor receives the larger of the two checks."""
+    """Benefits in pay. A sole survivor receives the larger of the two checks.
+
+    The deceased spouse's benefit is available at death, not at the age they
+    had planned to claim. A survivor younger than 60 does not receive it.
+    """
+    ages = ages or {}
     in_pay = {name: flows[name].ss for name in names if name in flows and flows[name].ss_active}
     if len(living) == 1 and len(names) > 1:
         survivor = living[0]
         own = in_pay.get(survivor, 0.0)
-        deceased = [amount for name, amount in in_pay.items() if name != survivor]
-        if deceased:
-            return max(own, max(deceased))
+        if ages.get(survivor, SURVIVOR_BENEFIT_AGE) < SURVIVOR_BENEFIT_AGE:
+            return own
+        deceased_amounts = [
+            flows[name].ss
+            for name in names
+            if name != survivor and name in flows and flows[name].ss > 0
+        ]
+        if deceased_amounts:
+            return max(own, max(deceased_amounts))
         return own
     return sum(in_pay.get(name, 0.0) for name in living)
 
@@ -570,6 +588,7 @@ def unspent_portfolio_cash(
     tax: float,
     medicare: float,
     aca: float,
+    payroll_withheld: float = 0.0,
 ) -> float:
     """Cash from a withdrawal that spending did not use.
 
@@ -584,6 +603,7 @@ def unspent_portfolio_cash(
         earned_income=earned_income,
         withdrawal_gross=withdrawal_gross,
         tax=tax,
+        payroll_withheld=payroll_withheld,
     )
     extra = cash - (living_expenses + medicare + aca)
     if extra < 1.0:
@@ -662,6 +682,45 @@ def _apply_working_year_taxes(
         seniors_65_count=seniors_65_count,
         tax_year=tax_year,
     )
+
+
+def _paycheck_withheld(
+    flows: dict[str, PersonFlows],
+    names: list[str],
+    *,
+    tax: TaxPolicy,
+    filing_status: str,
+    partial_retirement: bool,
+    inflation_factor: float = 1.0,
+) -> float:
+    """FICA plus the contribution deposited from these paychecks.
+
+    Counted only in partial retirement, when wages are also spendable cash.
+    The deposited amount is withheld so it is not spent and saved at once.
+    """
+    if not partial_retirement:
+        return 0.0
+    wages = sum(flows[name].earned_income for name in names if name in flows)
+    if wages <= 0:
+        return 0.0
+    fica = 0.0
+    if tax.working_year_tax_enabled:
+        fica = _fica_on_wages(
+            wages,
+            filing_status=filing_status,
+            inflation_factor=inflation_factor,
+        )
+    deposited = 0.0
+    for name in names:
+        if name not in flows:
+            continue
+        amount, _, _ = split_contributions(
+            flows[name].contributions,
+            roth_pct=tax.contribution_roth_pct,
+            pre_tax_rate=tax.pre_retire_rate,
+        )
+        deposited += amount
+    return min(wages, fica + deposited)
 
 
 def _fica_on_wages(
@@ -880,6 +939,7 @@ def _solve_with_healthcare(
     persons: dict[str, dict[str, Any]] | None = None,
     roth_conversion: float = 0.0,
     tax_year: int = 2024,
+    payroll_withheld: float = 0.0,
 ) -> tuple[float, float, float, float, float, MedicareCost, AcaCost, float]:
     """Solve withdrawal with Medicare, ACA subsidies, and IRMAA (iterative)."""
     medicare_extra = 0.0
@@ -933,6 +993,7 @@ def _solve_with_healthcare(
                 planning_precision=tax.planning_precision,
                 itemized=tax.itemized,
                 tax_year=tax_year,
+                payroll_withheld=payroll_withheld,
             )
         )
         magi, ss_taxable = _compute_magi(
@@ -1144,10 +1205,23 @@ def _solve_cash_flow_taxes(
     rmd_start_ages = _rmd_start_ages(persons, anchor_year=anchor_year, tax=tax)
 
     if filing.layout == "joint_return":
-        pension_gross = sum(flows[name].pension for name in persons if flows[name].pension_active)
-        ss_gross = social_security_gross(flows, retired + working, list(persons))
-        rental = sum(flows[name].rental for name in persons)
+        living_names = retired + working
+        pension_gross = sum(
+            flows[name].pension for name in living_names if flows[name].pension_active
+        )
+        ss_gross = social_security_gross(
+            flows, living_names, list(persons), ages
+        )
+        rental = sum(flows[name].rental for name in living_names)
         earned_income = sum(flows[name].earned_income for name in working)
+        payroll_withheld = _paycheck_withheld(
+            flows,
+            working,
+            tax=tax,
+            filing_status=filing.joint_filing_status or "mfj",
+            partial_retirement=bool(working and retired),
+            inflation_factor=inflation_factor,
+        )
         living_expenses = 0.0
         for name in persons:
             if name in retired:
@@ -1173,7 +1247,6 @@ def _solve_cash_flow_taxes(
                     inflation_factor=inflation_factor,
                     expense_policy=expense_policy,
                 )
-        living_names = retired + working
         living_expenses += deceased_base_carry(
             persons,
             flows,
@@ -1243,6 +1316,7 @@ def _solve_cash_flow_taxes(
             persons=persons,
             roth_conversion=0.0,
             tax_year=year,
+            payroll_withheld=payroll_withheld,
         )
         roth_conversion_total, person_conversions = _plan_roth_conversion(
             persons=persons,
@@ -1296,6 +1370,7 @@ def _solve_cash_flow_taxes(
             persons=persons,
             roth_conversion=roth_conversion_total,
             tax_year=year,
+            payroll_withheld=payroll_withheld,
         )
         reinvest["__household__"] = unspent_portfolio_cash(
             living_expenses=living_expenses,
@@ -1307,6 +1382,7 @@ def _solve_cash_flow_taxes(
             tax=federal_taxes + state_taxes,
             medicare=medicare_cost.total,
             aca=aca_cost.net,
+            payroll_withheld=payroll_withheld,
         )
         return (
             withdrawal_gross,
@@ -1327,6 +1403,7 @@ def _solve_cash_flow_taxes(
 
     roth_conversion_total = 0.0
     person_conversions: dict[str, float] = {}
+    living_names = retired + working
 
     for name in persons:
         person_working = name in working
@@ -1336,6 +1413,19 @@ def _solve_cash_flow_taxes(
         ss_gross = person_flows.ss if person_flows.ss_active else 0.0
         rental = person_flows.rental
         earned_income = person_flows.earned_income if person_working else 0.0
+        if name not in living_names:
+            pension_gross = 0.0
+            rental = 0.0
+            earned_income = 0.0
+            ss_gross = 0.0
+        person_withheld = _paycheck_withheld(
+            flows,
+            [name] if person_working else [],
+            tax=tax,
+            filing_status=filing.person_filing_status.get(name, "single"),
+            partial_retirement=bool(person_working and retired),
+            inflation_factor=inflation_factor,
+        )
         if person_retired:
             living_expenses = retirement_expense_for_person(
                 person_flows,
@@ -1359,7 +1449,6 @@ def _solve_cash_flow_taxes(
             )
         else:
             living_expenses = 0.0
-        living_names = retired + working
         if name in living_names and len(living_names) == 1:
             living_expenses += deceased_base_carry(
                 persons,
@@ -1372,7 +1461,7 @@ def _solve_cash_flow_taxes(
             )
             living_expenses += deceased_mortgage_carry(persons, living_names, year)
         if len(living_names) == 1 and name in living_names:
-            ss_gross = social_security_gross(flows, living_names, list(persons))
+            ss_gross = social_security_gross(flows, living_names, list(persons), ages)
         elif len(living_names) == 1 and name not in living_names:
             ss_gross = 0.0
         person_aca_ages = aca_enrollee_ages(
@@ -1443,6 +1532,7 @@ def _solve_cash_flow_taxes(
             persons={name: persons[name]},
             roth_conversion=0.0,
             tax_year=year,
+            payroll_withheld=person_withheld,
         )
         person_roth, person_conv_map = _plan_roth_conversion(
             persons={name: persons[name]},
@@ -1498,6 +1588,7 @@ def _solve_cash_flow_taxes(
             persons={name: persons[name]},
             roth_conversion=person_roth,
             tax_year=year,
+            payroll_withheld=person_withheld,
         )
         reinvest[name] = unspent_portfolio_cash(
             living_expenses=living_expenses,
@@ -1509,6 +1600,7 @@ def _solve_cash_flow_taxes(
             tax=person_federal + person_state,
             medicare=person_medicare.total,
             aca=person_aca.net,
+            payroll_withheld=person_withheld,
         )
         person_withdrawals[name] = person_withdrawal
         withdrawal_gross += person_withdrawal
@@ -1724,7 +1816,7 @@ def simulate_year(
     pension_gross = sum(
         flows[name].pension for name in living if flows[name].pension_active
     )
-    ss_gross = social_security_gross(flows, living, list(persons))
+    ss_gross = social_security_gross(flows, living, list(persons), ages)
     rental = sum(flows[name].rental for name in living)
     gross_benefits = pension_gross + ss_gross + rental
 

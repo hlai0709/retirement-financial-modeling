@@ -443,6 +443,43 @@ def remove_entry(snapshot: PlanningSnapshot, entry_id: str) -> dict[str, Any]:
     }
 
 
+def merge_applied_revert(
+    previous: list[dict[str, Any]] | None,
+    changes: list[dict[str, Any]] | None,
+) -> list[dict[str, Any]]:
+    """Keep the value from before this document first wrote a field.
+
+    A refresh of the same file would otherwise record its own last value as
+    the one to restore, so deleting the file would leave that payment in place.
+    """
+    prior = {
+        (str(item.get("field_key") or ""), item.get("person")): item
+        for item in (previous or [])
+    }
+    merged: list[dict[str, Any]] = []
+    seen: set[tuple[str, Any]] = set()
+    for change in changes or []:
+        key = (str(change.get("field_key") or ""), change.get("person"))
+        seen.add(key)
+        old = prior.get(key)
+        if old is not None and str(change.get("previous") or "").strip() == str(
+            old.get("applied") or ""
+        ).strip():
+            merged.append(
+                {
+                    **change,
+                    "previous": old.get("previous") or "",
+                    "previous_source": old.get("previous_source") or "Manual",
+                }
+            )
+        else:
+            merged.append(dict(change))
+    for key, old in prior.items():
+        if key not in seen:
+            merged.append(dict(old))
+    return merged
+
+
 def _revert_applied_fields(snapshot: PlanningSnapshot, entry: dict[str, Any]) -> int:
     """Put back the values this entry wrote, when the plan still shows those values."""
     from config.model_fields import FIELDS_BY_KEY

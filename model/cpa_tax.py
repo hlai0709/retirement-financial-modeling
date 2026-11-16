@@ -30,6 +30,7 @@ class ItemizedInputs:
     mortgage_interest: float = 0.0
     charitable: float = 0.0
     medical: float = 0.0
+    mortgage_interest_second: float = 0.0
 
 
 @dataclass(frozen=True)
@@ -48,6 +49,7 @@ def has_itemized_amounts(itemized: ItemizedInputs) -> bool:
         for value in (
             itemized.salt,
             itemized.mortgage_interest,
+            itemized.mortgage_interest_second,
             itemized.charitable,
             itemized.medical,
         )
@@ -65,6 +67,7 @@ def itemized_inputs_from_params(params: dict) -> ItemizedInputs:
         mortgage_interest=float(params.get("itemized_mortgage_interest", 0) or 0),
         charitable=float(params.get("itemized_charitable", 0) or 0),
         medical=float(params.get("itemized_medical", 0) or 0),
+        mortgage_interest_second=float(params.get("itemized_mortgage_interest_second", 0) or 0),
     )
 
 
@@ -104,10 +107,39 @@ def compute_itemized_deduction(
     """Return (total itemized deduction, SALT amount included after cap)."""
     cap = salt_deduction_cap(tax_year=tax_year, filing_status=filing_status, magi=agi)
     salt = min(max(0.0, inputs.salt), cap)
-    mortgage = max(0.0, inputs.mortgage_interest)
+    mortgage = max(0.0, inputs.mortgage_interest) + max(0.0, inputs.mortgage_interest_second)
     charitable = max(0.0, inputs.charitable)
     medical = max(0.0, inputs.medical - agi * MEDICAL_AGI_FLOOR_PCT)
     return salt + mortgage + charitable + medical, salt
+
+
+def _loan_payoff_limit(person: dict, annual_key: str, year_key: str):
+    """Return a payoff year, ``"open"`` when the loan has no end, or None if absent."""
+    payment = float(person.get(annual_key, 0) or 0)
+    raw = person.get(year_key)
+    if payment <= 0 and raw in (None, ""):
+        return None
+    if raw in (None, ""):
+        return "open" if payment > 0 else None
+    try:
+        payoff = int(float(str(raw).replace(",", "").replace("$", "")))
+    except (TypeError, ValueError):
+        return "open" if payment > 0 else None
+    if 1900 <= payoff <= 2100:
+        return payoff
+    return "open" if payment > 0 else None
+
+
+def _interest_remaining(amount: float, limits: list, year: int) -> float:
+    """Keep interest through the latest known payoff. A blank payoff leaves it on."""
+    if amount <= 0:
+        return 0.0
+    if not limits or any(limit == "open" for limit in limits):
+        return amount
+    years = [limit for limit in limits if isinstance(limit, int)]
+    if not years or year <= max(years):
+        return amount
+    return 0.0
 
 
 def itemized_for_year(
@@ -115,44 +147,47 @@ def itemized_for_year(
     persons: dict,
     year: int,
 ) -> ItemizedInputs:
-    """Drop mortgage interest once every known payoff year has passed.
+    """Stop each loan's interest after that loan's payoff year.
 
-    One household interest figure cannot be split across loans, so it stays
-    until the latest payoff year and then goes to zero. A blank payoff year
-    does not turn the deduction off.
+    A single combined interest amount, with no second-loan figure, still lasts
+    until the later payoff. A payment with a blank payoff year does not turn
+    its interest off.
     """
     from dataclasses import replace
 
-    if itemized.mortgage_interest <= 0:
+    if itemized.mortgage_interest <= 0 and itemized.mortgage_interest_second <= 0:
         return itemized
-    payoffs: list[int] = []
-    open_ended = False
+    first_limits = []
+    second_limits = []
     for person in persons.values():
-        for annual_key, year_key in (
-            ("mortgage_annual", "mortgage_payoff_year"),
-            ("mortgage_second_annual", "mortgage_second_payoff_year"),
-        ):
-            if float(person.get(annual_key, 0) or 0) <= 0 and annual_key != "mortgage_annual":
-                continue
-            if annual_key == "mortgage_annual" and float(person.get(annual_key, 0) or 0) <= 0:
-                if not person.get(year_key):
-                    continue
-            raw = person.get(year_key)
-            if raw in (None, ""):
-                if float(person.get(annual_key, 0) or 0) > 0:
-                    open_ended = True
-                continue
-            try:
-                payoff = int(float(str(raw).replace(",", "").replace("$", "")))
-            except (TypeError, ValueError):
-                continue
-            if 1900 <= payoff <= 2100:
-                payoffs.append(payoff)
-    if open_ended or not payoffs:
+        first = _loan_payoff_limit(person, "mortgage_annual", "mortgage_payoff_year")
+        second = _loan_payoff_limit(
+            person, "mortgage_second_annual", "mortgage_second_payoff_year"
+        )
+        if first is not None:
+            first_limits.append(first)
+        if second is not None:
+            second_limits.append(second)
+    if itemized.mortgage_interest_second > 0:
+        first_amount = _interest_remaining(itemized.mortgage_interest, first_limits, year)
+        second_amount = _interest_remaining(
+            itemized.mortgage_interest_second, second_limits, year
+        )
+    else:
+        first_amount = _interest_remaining(
+            itemized.mortgage_interest, first_limits + second_limits, year
+        )
+        second_amount = 0.0
+    if (
+        first_amount == itemized.mortgage_interest
+        and second_amount == itemized.mortgage_interest_second
+    ):
         return itemized
-    if year > max(payoffs):
-        return replace(itemized, mortgage_interest=0.0)
-    return itemized
+    return replace(
+        itemized,
+        mortgage_interest=first_amount,
+        mortgage_interest_second=second_amount,
+    )
 
 
 def _amt_exemption_and_phaseout(

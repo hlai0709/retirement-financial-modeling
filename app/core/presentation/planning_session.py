@@ -622,11 +622,18 @@ class PlanningSession:
             document_label=document_label,
         )
         if result.get("ok") and library_entry_id:
-            from app.core.lazy_mode.document_library import get_entry, mark_entry_status
+            from app.core.lazy_mode.document_library import (
+                get_entry,
+                mark_entry_status,
+                merge_applied_revert,
+            )
 
             entry = get_entry(self.snapshot, library_entry_id)
             if entry is not None:
-                entry["applied_revert"] = list(result.get("changes") or [])
+                entry["applied_revert"] = merge_applied_revert(
+                    list(entry.get("applied_revert") or []),
+                    list(result.get("changes") or []),
+                )
             mark_entry_status(
                 self.snapshot,
                 library_entry_id,

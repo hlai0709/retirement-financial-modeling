@@ -691,13 +691,23 @@ def spendable_cash(
     earned_income: float = 0.0,
     withdrawal_gross: float,
     tax: float,
+    payroll_withheld: float = 0.0,
 ) -> float:
-    """Cash available for spending after paying income taxes from income sources.
+    """Cash available for spending after income tax and paycheck withholdings.
 
-    Wages are included because the tax figure already taxes them. Leaving them
-    out forces the portfolio to withdraw enough to pay tax on a paycheck.
+    Wages are included because the tax figure already taxes them. FICA and the
+    retirement contribution that is deposited are not available to spend.
     """
-    return ss_gross + pension_gross + rental_gross + earned_income + withdrawal_gross - tax
+    withheld = min(max(0.0, earned_income), max(0.0, payroll_withheld))
+    return (
+        ss_gross
+        + pension_gross
+        + rental_gross
+        + earned_income
+        + withdrawal_gross
+        - tax
+        - withheld
+    )
 
 
 def solve_withdrawal_for_expenses(
@@ -731,6 +741,7 @@ def solve_withdrawal_for_expenses(
     planning_precision: str = "standard",
     itemized: ItemizedInputs | None = None,
     tax_year: int = 2024,
+    payroll_withheld: float = 0.0,
 ) -> tuple[float, float, float, float, float]:
     """Find gross portfolio withdrawal covering expenses and RMD floor."""
     if expenses <= 0 and rmd_floor <= 0:
@@ -790,6 +801,7 @@ def solve_withdrawal_for_expenses(
             earned_income=earned_income,
             withdrawal_gross=withdrawal,
             tax=federal + state,
+            payroll_withheld=payroll_withheld,
         )
 
     if spendable(rmd_floor) >= expenses:

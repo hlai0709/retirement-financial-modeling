@@ -387,7 +387,23 @@ SHARED_FIELDS: tuple[ModelField, ...] = (
         0,
         "money",
         "manual",
-        description="Annual mortgage interest. Used when it beats the standard deduction, and stops after the last payoff year.",
+        description=(
+            "Annual interest on the first mortgage. Used when it beats the standard deduction. "
+            "A second loan's interest is separate and each amount stops after that loan's payoff."
+        ),
+        llm_research=False,
+    ),
+    ModelField(
+        "itemized_mortgage_interest_second",
+        "Second Mortgage Interest",
+        "shared",
+        0,
+        "money",
+        "manual",
+        description=(
+            "Annual interest on the second mortgage. It ends when that loan's payoff year "
+            "has passed, rather than staying on until the other loan ends."
+        ),
         llm_research=False,
     ),
     ModelField(

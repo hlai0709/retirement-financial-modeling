@@ -128,6 +128,12 @@ def _apply_default(snapshot: PlanningSnapshot, suggestion: ExtractedFieldSuggest
     person = suggestion.person if field.scope == "person" else None
     # High-confidence document extracts default on (user can uncheck) so SSA PIA mode
     # overwrites a prior "earnings" mode when importing a statement.
+    if (
+        suggestion.field_key == "itemized_mortgage_interest"
+        and str(suggestion.confidence or "").lower() != "high"
+    ):
+        # Year-to-date statement interest is not a full-year deduction.
+        return False
     if str(suggestion.confidence or "").lower() == "high":
         return True
     return is_field_empty(snapshot, field, person=person)
@@ -223,6 +229,24 @@ def ingest_document(snapshot: PlanningSnapshot, path: str) -> dict[str, Any]:
     }
 
 
+def _remember_property_tax_bills(snapshot: PlanningSnapshot, rows: list[dict[str, Any]]) -> None:
+    """Keep each bill amount so a later refresh can replace one bill instead of the sum."""
+    for row in rows:
+        if not row.get("apply", True):
+            continue
+        if str(row.get("field_key") or "") != "property_tax_annual":
+            continue
+        quote = str(row.get("source_quote") or "")
+        marker = "bills="
+        if marker not in quote:
+            continue
+        encoded = quote.split(marker, 1)[1].split(";", 1)[0].strip()
+        if not encoded:
+            continue
+        person = row.get("person") if row.get("person") in {"self", "wife"} else "self"
+        snapshot.persons.setdefault(person, {})["_property_tax_bills"] = encoded
+
+
 def apply_document_import(
     snapshot: PlanningSnapshot,
     rows: list[dict[str, Any]],
@@ -242,6 +266,7 @@ def apply_document_import(
         rows,
         document_id=document_type,
     )
+    _remember_property_tax_bills(snapshot, rows)
     result = apply_llm_suggestions(snapshot, rows)
     applied = int(result.get("applied", 0))
     field_details: list[dict[str, Any]] = []

@@ -475,6 +475,119 @@ def _sum_additive_income_if_needed(
     return out
 
 
+def _same_loan(
+    existing_payment: float,
+    existing_year: int,
+    new_payment: float,
+    new_year: int,
+) -> bool:
+    """A refinance keeps the maturity. A similar payment with a different maturity does not."""
+    if existing_payment <= 0 or new_payment <= 0:
+        return False
+    if existing_year > 0 and new_year > 0:
+        gap = abs(existing_year - new_year)
+        if gap <= 1:
+            return True
+        if gap >= 3:
+            return False
+    return _amounts_within(existing_payment, new_payment)
+
+
+def _snapshot_money(snapshot: PlanningSnapshot, key: str, person: str) -> float:
+    from config.field_values import parse_field_value
+    from config.model_fields import FIELDS_BY_KEY
+
+    field = FIELDS_BY_KEY.get(key)
+    if field is None:
+        return 0.0
+    try:
+        return float(parse_field_value(field, snapshot.get_raw(field, person=person)) or 0)
+    except Exception:
+        return 0.0
+
+
+def _snapshot_year(snapshot: PlanningSnapshot, key: str, person: str) -> int:
+    from config.field_values import parse_field_value
+    from config.model_fields import FIELDS_BY_KEY
+
+    field = FIELDS_BY_KEY.get(key)
+    if field is None:
+        return 0
+    try:
+        parsed = parse_field_value(field, snapshot.get_raw(field, person=person))
+    except Exception:
+        return 0
+    try:
+        year = int(float(parsed or 0))
+    except (TypeError, ValueError):
+        return 0
+    return year if 1900 <= year <= 2100 else 0
+
+
+def _row_amount(fields: list, key: str) -> float:
+    from config.field_values import parse_field_value
+    from config.model_fields import FIELDS_BY_KEY
+
+    field = FIELDS_BY_KEY.get(key)
+    if field is None:
+        return 0.0
+    for item in fields:
+        if getattr(item, "field_key", None) != key:
+            continue
+        try:
+            return float(parse_field_value(field, str(getattr(item, "raw_value", "") or "0")) or 0)
+        except Exception:
+            return 0.0
+    return 0.0
+
+
+def _row_year(fields: list, key: str) -> int:
+    from config.field_values import parse_field_value
+    from config.model_fields import FIELDS_BY_KEY
+
+    field = FIELDS_BY_KEY.get(key)
+    if field is None:
+        return 0
+    for item in fields:
+        if getattr(item, "field_key", None) != key:
+            continue
+        try:
+            parsed = parse_field_value(field, str(getattr(item, "raw_value", "") or ""))
+            year = int(float(parsed or 0))
+        except Exception:
+            return 0
+        return year if 1900 <= year <= 2100 else 0
+    return 0
+
+
+def _bill_components(snapshot: PlanningSnapshot, person: str, existing_total: float) -> list[float]:
+    raw = ""
+    persons = getattr(snapshot, "persons", {}) or {}
+    bucket = persons.get(person) or {}
+    raw = str(bucket.get("_property_tax_bills") or "")
+    bills: list[float] = []
+    for part in raw.split(","):
+        try:
+            value = float(part)
+        except ValueError:
+            continue
+        if value > 0:
+            bills.append(value)
+    if not bills and existing_total > 0:
+        bills = [existing_total]
+    return bills
+
+
+def _bill_list(bills: list[float]) -> str:
+    parts = []
+    for value in bills:
+        if abs(value - round(value)) < 1e-6:
+            parts.append(str(int(round(value))))
+        else:
+            parts.append(f"{value:.2f}")
+    return ",".join(parts)
+
+
 def _amounts_within(existing: float, new: float, tolerance: float = 0.12) -> bool:
     """True when a new import looks like a refresh of the same bill, not a second one."""
     if existing <= 0 or new <= 0:
@@ -530,22 +643,55 @@ def _stack_property_tax_if_needed(
         except Exception:
             out.append(item)
             continue
-        if _amounts_within(existing, new_val):
-            out.append(item)
-            continue
-        total = existing + new_val
+        bills = _bill_components(snapshot, person_scope, existing)
         quote = str(getattr(item, "source_quote", "") or "")
+        matched = None
+        closest = None
+        for index, bill in enumerate(bills):
+            if not _amounts_within(bill, new_val):
+                continue
+            gap = abs(bill - new_val) / max(bill, new_val)
+            if closest is None or gap < closest:
+                closest = gap
+                matched = index
+        if matched is not None:
+            bills[matched] = new_val
+            note = "refreshed one property-tax bill"
+        else:
+            bills.append(new_val)
+            note = f"summed with existing ${existing:,.0f} (multiple properties)"
+        total = sum(bills)
         out.append(
             replace(
                 item,
                 raw_value=format_field_value(field_def, total),
                 display_value=f"${total:,.0f}",
                 source_quote=(
-                    f"{quote}; summed with existing ${existing:,.0f} (multiple properties)"
+                    f"{quote}; {note}; bills={_bill_list(bills)}"
                 ).strip("; "),
             )
         )
     return out
+
+
+def _retarget_loan_fields(item, *, slot: str, quote_note: str):
+    from dataclasses import replace
+
+    key = getattr(item, "field_key", None)
+    mapping = {
+        "mortgage_annual": "mortgage_second_annual",
+        "mortgage_payoff_year": "mortgage_second_payoff_year",
+        "mortgage_payoff_month": "mortgage_second_payoff_month",
+        "itemized_mortgage_interest": "itemized_mortgage_interest_second",
+    }
+    if slot != "second" or key not in mapping:
+        return item
+    quote = str(getattr(item, "source_quote", "") or "")
+    return replace(
+        item,
+        field_key=mapping[key],
+        source_quote=f"{quote}; {quote_note}".strip("; "),
+    )
 
 
 def _stack_mortgage_if_needed(
@@ -555,127 +701,128 @@ def _stack_mortgage_if_needed(
     document_id: str,
     person: str | None,
 ) -> list:
-    """Keep a different mortgage on its own payment and payoff, apart from the first loan."""
+    """Keep a different mortgage on its own payment and payoff, apart from the first loan.
+
+    A statement is the same loan when the maturity matches, or when the payment
+    is within about 12% and the maturity is unknown. A refresh of the second
+    slot replaces that slot. It is not added on as a third loan.
+    """
     if document_id not in {"form_1098", "mortgage_statement"} or not fields:
         return fields
     from dataclasses import replace
 
-    from config.field_values import format_field_value, parse_field_value
+    from config.field_values import format_field_value
     from config.model_fields import FIELDS_BY_KEY
 
     person_scope = person if person in {"self", "wife"} else "self"
-    annual_field = FIELDS_BY_KEY.get("mortgage_annual")
-    if annual_field is None:
-        return fields
-
-    existing_annual = 0.0
-    try:
-        existing_annual = float(
-            parse_field_value(
-                annual_field,
-                snapshot.get_raw(annual_field, person=person_scope),
-            )
-            or 0
-        )
-    except Exception:
-        existing_annual = 0.0
+    first_payment = _snapshot_money(snapshot, "mortgage_annual", person_scope)
+    first_year = _snapshot_year(snapshot, "mortgage_payoff_year", person_scope)
+    second_payment = _snapshot_money(snapshot, "mortgage_second_annual", person_scope)
+    second_year = _snapshot_year(snapshot, "mortgage_second_payoff_year", person_scope)
     src = str(snapshot.get_source(person_scope, "mortgage_annual") or "").lower()
-    looks_imported = (
-        "import" in src or "mortgage" in src or "1098" in src or "statement" in src
+    second_src = str(snapshot.get_source(person_scope, "mortgage_second_annual") or "").lower()
+    looks_imported = any(
+        token in source
+        for source in (src, second_src)
+        for token in ("import", "mortgage", "1098", "statement")
     )
-    # A 1098 is interest for a loan you already have, not a second payment.
-    # A statement within ~12% replaces that loan. A clearly different payment stacks.
-    refresh_same_loan = False
-    stack_annual = False
-    if existing_annual > 0 and looks_imported and document_id == "mortgage_statement":
-        proposed = 0.0
-        for item in fields:
-            if getattr(item, "field_key", None) != "mortgage_annual":
-                continue
-            try:
-                proposed = float(
-                    parse_field_value(
-                        annual_field,
-                        str(getattr(item, "raw_value", "") or "0"),
-                    )
-                )
-            except Exception:
-                proposed = 0.0
-            break
-        if proposed > 0 and _amounts_within(existing_annual, proposed):
-            refresh_same_loan = True
-        elif proposed > 0:
-            stack_annual = True
-    elif existing_annual > 0 and document_id == "form_1098":
-        refresh_same_loan = True
+    proposed = _row_amount(fields, "mortgage_annual")
+    proposed_year = _row_year(fields, "mortgage_payoff_year")
+    # refresh_first, refresh_second, add_second, form_first, form_second, form_drop_payoff
+    action = "keep"
+    if document_id == "mortgage_statement" and looks_imported and proposed > 0:
+        if first_payment > 0 and _same_loan(first_payment, first_year, proposed, proposed_year):
+            action = "refresh_first"
+        elif second_payment > 0 and _same_loan(
+            second_payment, second_year, proposed, proposed_year
+        ):
+            action = "refresh_second"
+        elif first_payment > 0:
+            action = "add_second"
+    elif document_id == "form_1098" and (first_payment > 0 or second_payment > 0):
+        matches_first = first_year > 0 and proposed_year > 0 and abs(first_year - proposed_year) <= 1
+        matches_second = (
+            second_year > 0 and proposed_year > 0 and abs(second_year - proposed_year) <= 1
+        )
+        new_interest = _row_amount(fields, "itemized_mortgage_interest")
+        first_interest = _snapshot_money(snapshot, "itemized_mortgage_interest", person_scope)
+        second_interest = _snapshot_money(
+            snapshot, "itemized_mortgage_interest_second", person_scope
+        )
+        if matches_second and not matches_first:
+            action = "form_second"
+        elif matches_first or second_payment <= 0:
+            action = "form_first"
+        elif proposed_year > 0:
+            # A maturity that matches neither loan must not rewrite the first loan.
+            action = "form_drop_payoff"
+        elif second_interest > 0 and _amounts_within(second_interest, new_interest):
+            action = "form_second"
+        elif first_interest <= 0 or _amounts_within(first_interest, new_interest):
+            action = "form_first"
+        else:
+            action = "form_second"
 
     out = []
     for item in fields:
         key = getattr(item, "field_key", None)
-        if key == "mortgage_annual" and document_id == "form_1098" and existing_annual > 0:
-            # Keep the payment already on the plan. 1098 does not add a loan.
+        if key == "mortgage_annual" and document_id == "form_1098" and action != "keep":
             continue
-        if key == "mortgage_payoff_year" and refresh_same_loan:
+        if action == "refresh_first" or action == "keep":
             out.append(item)
             continue
-        if key == "mortgage_annual" and stack_annual:
+        if action == "form_first":
+            out.append(item)
+            continue
+        if action == "form_drop_payoff" and key in {"mortgage_payoff_year", "mortgage_payoff_month"}:
+            continue
+        if action == "form_drop_payoff" and key == "itemized_mortgage_interest":
+            out.append(_retarget_loan_fields(item, slot="second", quote_note="second loan interest"))
+            continue
+        if action in {"refresh_second", "form_second"}:
+            moved = _retarget_loan_fields(
+                item,
+                slot="second",
+                quote_note="this loan's own payoff" if key != "mortgage_annual" else "refreshed second mortgage",
+            )
+            if action == "refresh_second" and key == "mortgage_annual":
+                second_field = FIELDS_BY_KEY.get("mortgage_second_annual")
+                if second_field is not None:
+                    moved = replace(
+                        moved,
+                        raw_value=format_field_value(second_field, proposed),
+                        display_value=f"${proposed:,.0f}",
+                    )
+            out.append(moved)
+            continue
+        if action == "add_second" and key == "mortgage_annual":
             second_field = FIELDS_BY_KEY.get("mortgage_second_annual")
             if second_field is None:
                 out.append(item)
                 continue
-            try:
-                new_val = float(
-                    parse_field_value(
-                        annual_field,
-                        str(getattr(item, "raw_value", "") or "0"),
-                    )
-                )
-            except Exception:
-                out.append(item)
-                continue
-            try:
-                already = float(
-                    parse_field_value(
-                        second_field,
-                        snapshot.get_raw(second_field, person=person_scope),
-                    )
-                    or 0
-                )
-            except Exception:
-                already = 0.0
-            total = new_val if already <= 0 else already + new_val
+            total = proposed if second_payment <= 0 else second_payment + proposed
             quote = str(getattr(item, "source_quote", "") or "")
+            if second_payment > 0:
+                note = (
+                    f"added to the second mortgage ${second_payment:,.0f}; "
+                    f"kept apart from ${first_payment:,.0f}"
+                )
+            else:
+                note = f"second mortgage, kept apart from ${first_payment:,.0f}"
             out.append(
                 replace(
                     item,
                     field_key="mortgage_second_annual",
                     raw_value=format_field_value(second_field, total),
                     display_value=f"${total:,.0f}",
-                    source_quote=(
-                        f"{quote}; second mortgage, kept apart from "
-                        f"${existing_annual:,.0f}"
-                    ).strip("; "),
+                    source_quote=f"{quote}; {note}".strip("; "),
                 )
             )
             continue
-        if key == "mortgage_payoff_year" and stack_annual:
-            second_year_field = FIELDS_BY_KEY.get("mortgage_second_payoff_year")
-            if second_year_field is None:
-                out.append(item)
-                continue
+        if action == "add_second" and key in {"mortgage_payoff_year", "mortgage_payoff_month"}:
             out.append(
-                replace(
-                    item,
-                    field_key="mortgage_second_payoff_year",
-                    source_quote=(
-                        f"{getattr(item, 'source_quote', '') or ''}; "
-                        "this loan's own payoff"
-                    ).strip("; "),
-                )
+                _retarget_loan_fields(item, slot="second", quote_note="this loan's own payoff")
             )
-            continue
-        if key == "mortgage_payoff_month" and stack_annual:
-            out.append(replace(item, field_key="mortgage_second_payoff_month"))
             continue
         out.append(item)
     return out
@@ -713,7 +860,12 @@ def retarget_stacked_import_rows(
         if person not in persons:
             persons.append(person)
 
-    mortgage_keys = {"mortgage_annual", "mortgage_payoff_year", "mortgage_payoff_month"}
+    mortgage_keys = {
+        "mortgage_annual",
+        "mortgage_payoff_year",
+        "mortgage_payoff_month",
+        "itemized_mortgage_interest",
+    }
     for person in persons:
         wrapped: list[_Row] = []
         for index, row in enumerate(pending):
@@ -722,7 +874,17 @@ def retarget_stacked_import_rows(
                 continue
             key = str(row.get("field_key") or "")
             quote = str(row.get("source_quote") or "")
-            if "second mortgage" in quote.lower() or "summed with existing" in quote.lower():
+            if any(
+                marker in quote.lower()
+                for marker in (
+                    "second mortgage",
+                    "refreshed second mortgage",
+                    "second loan interest",
+                    "summed with existing",
+                    "refreshed one property-tax bill",
+                    "bills=",
+                )
+            ):
                 continue
             if kind == "property_tax_bill" and key != "property_tax_annual":
                 continue
