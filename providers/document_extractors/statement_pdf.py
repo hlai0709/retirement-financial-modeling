@@ -376,6 +376,12 @@ def extract_1099_r_suggestions(text: str, *, person: str | None = "self") -> lis
 # Prefer full money amounts (with cents) — lender PDFs often glue labels together.
 _MONEY_AMT = r"(\d{1,3}(?:,\d{3})+\.\d{2}|\d{4,}\.\d{2}|\d{1,3}\.\d{2})"
 # Maturity / payoff as a calendar year only — never capture dollar amounts.
+_PAYOFF_DATE = re.compile(
+    r"(?:matur(?:ity|es)\s*(?:date|year)?|final\s+(?:payment|due)|"
+    r"loan\s+(?:matures|ends)|paid\s+off\s+(?:in|by|year))"
+    r"[^\n\d]{0,40}?(\d{1,2})[/-](\d{1,2})[/-](20\d{2})\b",
+    re.IGNORECASE,
+)
 _PAYOFF_YEAR = re.compile(
     r"(?:matur(?:ity|es)\s*(?:date|year)?|final\s+(?:payment|due)|"
     r"loan\s+(?:matures|ends)|paid\s+off\s+(?:in|by|year))"
@@ -669,24 +675,50 @@ def _add_payoff_year(
         return
     field_person = person if field.scope == "person" else None
 
-    # 1) Prefer printed maturity year when clearly labeled
+    def _append_payoff(year: int, month: int, quote: str, confidence: str) -> None:
+        out.append(
+            ExtractedFieldSuggestion(
+                field_key="mortgage_payoff_year",
+                person=field_person,
+                label=field.label,
+                raw_value=format_field_value(field, year),
+                display_value=str(year),
+                confidence=confidence,
+                source_quote=quote[:80],
+                document_type=DocumentType.PDF.value,
+            )
+        )
+        keys.add("mortgage_payoff_year")
+        month_field = resolve_field("mortgage_payoff_month", person=person)
+        if month_field is not None and 1 <= month <= 12 and "mortgage_payoff_month" not in keys:
+            out.append(
+                ExtractedFieldSuggestion(
+                    field_key="mortgage_payoff_month",
+                    person=person if month_field.scope == "person" else None,
+                    label=month_field.label,
+                    raw_value=format_field_value(month_field, month),
+                    display_value=str(month),
+                    confidence=confidence,
+                    source_quote=quote[:80],
+                    document_type=DocumentType.PDF.value,
+                )
+            )
+            keys.add("mortgage_payoff_month")
+
+    # 1) Prefer a printed maturity date, including the month.
+    date_match = _PAYOFF_DATE.search(text)
+    if date_match:
+        month = int(date_match.group(1))
+        year = int(date_match.group(3))
+        if 2020 <= year <= 2099 and 1 <= month <= 12:
+            _append_payoff(year, month, date_match.group(0), "medium")
+            return
+
     year_match = _PAYOFF_YEAR.search(text)
     if year_match:
         year = int(year_match.group(1))
         if 2020 <= year <= 2099:
-            out.append(
-                ExtractedFieldSuggestion(
-                    field_key="mortgage_payoff_year",
-                    person=field_person,
-                    label=field.label,
-                    raw_value=format_field_value(field, year),
-                    display_value=str(year),
-                    confidence="medium",
-                    source_quote=year_match.group(0)[:80],
-                    document_type=DocumentType.PDF.value,
-                )
-            )
-            keys.add("mortgage_payoff_year")
+            _append_payoff(year, 0, year_match.group(0), "medium")
             return
 
     # 2) Compute from outstanding balance + P&I + note rate
@@ -706,23 +738,17 @@ def _add_payoff_year(
         )
         if summary:
             year = int(summary["payoff_year"])
-            out.append(
-                ExtractedFieldSuggestion(
-                    field_key="mortgage_payoff_year",
-                    person=field_person,
-                    label=field.label,
-                    raw_value=format_field_value(field, year),
-                    display_value=str(year),
-                    confidence=payoff_confidence,
-                    source_quote=(
-                        f"Computed maturity {year} from balance ${principal:,.0f}, "
-                        f"P&I ${monthly_pi:,.2f}/mo, rate {rate_pct:g}% "
-                        f"(~{summary['years_remaining']} yrs remaining)"
-                    ),
-                    document_type=DocumentType.PDF.value,
-                )
+            month = int(summary.get("payoff_month") or 0)
+            _append_payoff(
+                year,
+                month,
+                (
+                    f"Computed maturity {year}-{month:02d} from balance ${principal:,.0f}, "
+                    f"P&I ${monthly_pi:,.2f}/mo, rate {rate_pct:g}% "
+                    f"(~{summary['years_remaining']} yrs remaining)"
+                ),
+                payoff_confidence,
             )
-            keys.add("mortgage_payoff_year")
 
 
 def _extract_mortgage_common(
@@ -734,9 +760,9 @@ def _extract_mortgage_common(
 ) -> list[ExtractedFieldSuggestion]:
     """Shared 1098 / lender-statement mortgage mapping + amortization.
 
-    ``mortgage_annual`` is principal and interest times 12 when that split is
-    known, so the payment can stop at payoff without taking escrow with it.
-    A total payment that still includes escrow is kept only at medium confidence.
+    ``mortgage_annual`` is principal and interest times 12. A total payment
+    that includes escrow is not stored as the loan payment, because that
+    amount would disappear at payoff and double-count a property-tax bill.
     Year-to-date statement interest is not a full-year deduction and is not
     copied into the annual payment.
     """
@@ -762,7 +788,6 @@ def _extract_mortgage_common(
         )
 
     principal = _mortgage_principal(text)
-    monthly_total = _mortgage_monthly_payment(text)
     monthly_pi = _mortgage_monthly_pi(text)
     rate_pct = _mortgage_interest_rate_pct(text)
 
@@ -780,21 +805,6 @@ def _extract_mortgage_common(
                 confidence="high",
             )
         )
-    elif monthly_total:
-        annual = round(monthly_total * 12.0, 2)
-        _add(
-            _money_suggestion(
-                "mortgage_annual",
-                annual,
-                person=person,
-                quote=(
-                    f"Total payment ${monthly_total:,.2f}/mo × 12 = ${annual:,.0f}/yr. "
-                    "This includes escrow, so do not also add a property-tax bill."
-                ),
-                confidence="medium",
-            )
-        )
-
     _add_payoff_year(
         out,
         keys,

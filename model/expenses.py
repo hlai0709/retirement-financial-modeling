@@ -113,30 +113,65 @@ def age_expense_multiplier(
     return 1.0
 
 
+def _calendar_year(raw: object) -> int:
+    if raw in (None, ""):
+        return 0
+    try:
+        year = int(float(str(raw).replace(",", "").replace("$", "")))
+    except (TypeError, ValueError):
+        return 0
+    return year if 1900 <= year <= 2100 else 0
+
+
+def _payoff_month(raw: object) -> int:
+    """1–12 when the last payment's month is known. 0 means the year is not split."""
+    if raw in (None, ""):
+        return 0
+    try:
+        month = int(float(str(raw).replace(",", "")))
+    except (TypeError, ValueError):
+        return 0
+    return month if 1 <= month <= 12 else 0
+
+
+def _one_loan_payment(annual: float, payoff_year: int, payoff_month: int, year: int) -> float:
+    """Level P&I. The payoff year is charged through the payoff month, not always 12 months."""
+    if annual <= 0:
+        return 0.0
+    if payoff_year <= 0:
+        return annual
+    if year > payoff_year:
+        return 0.0
+    if year < payoff_year or payoff_month <= 0:
+        return annual
+    return annual * payoff_month / 12.0
+
+
 def person_mortgage_annual(
     person: dict[str, Any],
     *,
     year: int,
     inflation_factor: float = 1.0,
 ) -> float:
-    """Fixed nominal P&I (and typical escrow total) — do not inflate with CPI.
+    """Fixed nominal P&I — do not inflate with CPI. Escrow is not part of this payment.
 
-    ``inflation_factor`` is accepted for call-site symmetry with other expense
-    helpers but intentionally unused: fixed-rate mortgage cash flow is level.
+    A second mortgage ends on its own payoff year. ``inflation_factor`` is accepted
+    for call-site symmetry and is unused: a fixed-rate payment stays level.
     """
     _ = inflation_factor
-    annual = float(person.get("mortgage_annual", 0) or 0)
-    if annual <= 0:
-        return 0.0
-    payoff = person.get("mortgage_payoff_year")
-    # Treat blank / 0 / balance-sized junk as no cutoff (payment continues).
-    try:
-        payoff_year = int(float(str(payoff).replace(",", "").replace("$", ""))) if payoff not in (None, "") else 0
-    except (TypeError, ValueError):
-        payoff_year = 0
-    if 1900 <= payoff_year <= 2100 and year > payoff_year:
-        return 0.0
-    return annual
+    first = _one_loan_payment(
+        float(person.get("mortgage_annual", 0) or 0),
+        _calendar_year(person.get("mortgage_payoff_year")),
+        _payoff_month(person.get("mortgage_payoff_month")),
+        year,
+    )
+    second = _one_loan_payment(
+        float(person.get("mortgage_second_annual", 0) or 0),
+        _calendar_year(person.get("mortgage_second_payoff_year")),
+        _payoff_month(person.get("mortgage_second_payoff_month")),
+        year,
+    )
+    return first + second
 
 
 def person_one_time_expense(

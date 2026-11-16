@@ -555,7 +555,7 @@ def _stack_mortgage_if_needed(
     document_id: str,
     person: str | None,
 ) -> list:
-    """Stack a second mortgage import: sum annual payments, keep later payoff year."""
+    """Keep a different mortgage on its own payment and payoff, apart from the first loan."""
     if document_id not in {"form_1098", "mortgage_statement"} or not fields:
         return fields
     from dataclasses import replace
@@ -565,7 +565,6 @@ def _stack_mortgage_if_needed(
 
     person_scope = person if person in {"self", "wife"} else "self"
     annual_field = FIELDS_BY_KEY.get("mortgage_annual")
-    payoff_field = FIELDS_BY_KEY.get("mortgage_payoff_year")
     if annual_field is None:
         return fields
 
@@ -610,16 +609,6 @@ def _stack_mortgage_if_needed(
     elif existing_annual > 0 and document_id == "form_1098":
         refresh_same_loan = True
 
-    existing_payoff = None
-    if payoff_field is not None:
-        try:
-            existing_payoff = parse_field_value(
-                payoff_field,
-                snapshot.get_raw(payoff_field, person=person_scope),
-            )
-        except Exception:
-            existing_payoff = None
-
     out = []
     for item in fields:
         key = getattr(item, "field_key", None)
@@ -629,7 +618,11 @@ def _stack_mortgage_if_needed(
         if key == "mortgage_payoff_year" and refresh_same_loan:
             out.append(item)
             continue
-        if key == "mortgage_annual" and stack_annual and annual_field is not None:
+        if key == "mortgage_annual" and stack_annual:
+            second_field = FIELDS_BY_KEY.get("mortgage_second_annual")
+            if second_field is None:
+                out.append(item)
+                continue
             try:
                 new_val = float(
                     parse_field_value(
@@ -640,52 +633,141 @@ def _stack_mortgage_if_needed(
             except Exception:
                 out.append(item)
                 continue
-            total = existing_annual + new_val
-            quote = str(getattr(item, "source_quote", "") or "")
-            out.append(
-                replace(
-                    item,
-                    raw_value=format_field_value(annual_field, total),
-                    display_value=f"${total:,.0f}",
-                    source_quote=(
-                        f"{quote}; summed with existing ${existing_annual:,.0f} "
-                        f"(multiple mortgages)"
-                    ).strip("; "),
-                )
-            )
-            continue
-        if (
-            key == "mortgage_payoff_year"
-            and payoff_field is not None
-            and existing_payoff
-            and stack_annual
-        ):
             try:
-                new_year = int(
+                already = float(
                     parse_field_value(
-                        payoff_field,
-                        str(getattr(item, "raw_value", "") or "0"),
+                        second_field,
+                        snapshot.get_raw(second_field, person=person_scope),
                     )
                     or 0
                 )
             except Exception:
-                out.append(item)
-                continue
-            later = max(int(existing_payoff), new_year)
+                already = 0.0
+            total = new_val if already <= 0 else already + new_val
             quote = str(getattr(item, "source_quote", "") or "")
             out.append(
                 replace(
                     item,
-                    raw_value=format_field_value(payoff_field, later),
-                    display_value=str(later),
+                    field_key="mortgage_second_annual",
+                    raw_value=format_field_value(second_field, total),
+                    display_value=f"${total:,.0f}",
                     source_quote=(
-                        f"{quote}; using later payoff {later} across mortgages"
+                        f"{quote}; second mortgage, kept apart from "
+                        f"${existing_annual:,.0f}"
                     ).strip("; "),
                 )
             )
             continue
+        if key == "mortgage_payoff_year" and stack_annual:
+            second_year_field = FIELDS_BY_KEY.get("mortgage_second_payoff_year")
+            if second_year_field is None:
+                out.append(item)
+                continue
+            out.append(
+                replace(
+                    item,
+                    field_key="mortgage_second_payoff_year",
+                    source_quote=(
+                        f"{getattr(item, 'source_quote', '') or ''}; "
+                        "this loan's own payoff"
+                    ).strip("; "),
+                )
+            )
+            continue
+        if key == "mortgage_payoff_month" and stack_annual:
+            out.append(replace(item, field_key="mortgage_second_payoff_month"))
+            continue
         out.append(item)
     return out
+
+
+def retarget_stacked_import_rows(
+    snapshot: PlanningSnapshot,
+    rows: list[dict[str, Any]],
+    *,
+    document_id: str,
+) -> list[dict[str, Any]]:
+    """Apply the same stack rules at import time as at extract time.
+
+    Two documents can be extracted while the plan is still empty. Each suggestion
+    then names the first mortgage or the first tax bill. Applying the second one
+    would replace the first. Re-check against the plan as it stands now.
+    """
+    kind = str(document_id or "")
+    if kind not in {"form_1098", "mortgage_statement", "property_tax_bill"}:
+        return rows
+    from dataclasses import dataclass
+
+    @dataclass
+    class _Row:
+        field_key: str
+        raw_value: str
+        source_quote: str = ""
+        display_value: str = ""
+        index: int = 0
+
+    pending = [dict(row) for row in rows]
+    persons: list[str] = []
+    for row in pending:
+        person = row.get("person") if row.get("person") in {"self", "wife"} else "self"
+        if person not in persons:
+            persons.append(person)
+
+    mortgage_keys = {"mortgage_annual", "mortgage_payoff_year", "mortgage_payoff_month"}
+    for person in persons:
+        wrapped: list[_Row] = []
+        for index, row in enumerate(pending):
+            row_person = row.get("person") if row.get("person") in {"self", "wife"} else "self"
+            if row_person != person or not row.get("apply", True):
+                continue
+            key = str(row.get("field_key") or "")
+            quote = str(row.get("source_quote") or "")
+            if "second mortgage" in quote.lower() or "summed with existing" in quote.lower():
+                continue
+            if kind == "property_tax_bill" and key != "property_tax_annual":
+                continue
+            if kind != "property_tax_bill" and key not in mortgage_keys:
+                continue
+            wrapped.append(
+                _Row(
+                    field_key=key,
+                    raw_value=str(row.get("raw_value") or ""),
+                    source_quote=quote,
+                    display_value=str(row.get("display_value") or row.get("suggested") or ""),
+                    index=index,
+                )
+            )
+        if not wrapped:
+            continue
+        if kind == "property_tax_bill":
+            stacked = _stack_property_tax_if_needed(
+                snapshot,
+                wrapped,
+                document_id=kind,
+                person=person,
+            )
+        else:
+            stacked = _stack_mortgage_if_needed(
+                snapshot,
+                wrapped,
+                document_id=kind,
+                person=person,
+            )
+        kept = {item.index: item for item in stacked}
+        for item in wrapped:
+            row = pending[item.index]
+            updated = kept.get(item.index)
+            if updated is None:
+                row["apply"] = False
+                continue
+            row["field_key"] = updated.field_key
+            row["raw_value"] = updated.raw_value
+            if updated.display_value:
+                row["display_value"] = updated.display_value
+                row["suggested"] = updated.display_value
+            if updated.source_quote:
+                row["source_quote"] = updated.source_quote
+    return pending
 
 
 def _merge_field_suggestions(

@@ -172,6 +172,7 @@ def apply_llm_suggestions(snapshot: PlanningSnapshot, applications: list[dict[st
 
     applied = 0
     skipped = 0
+    changes: list[dict[str, Any]] = []
     for row in applications:
         if not row.get("apply"):
             continue
@@ -197,9 +198,22 @@ def apply_llm_suggestions(snapshot: PlanningSnapshot, applications: list[dict[st
         if field.field_type == "year" and parsed is None:
             skipped += 1
             continue
-        snapshot.set_raw(field, format_field_value(field, parsed), person=person)
+        scope = person if field.scope == "person" else None
+        previous = snapshot.get_raw(field, person=scope)
+        previous_source = snapshot.get_source(scope, field.key)
+        written = format_field_value(field, parsed)
+        snapshot.set_raw(field, written, person=scope)
         source = str(row.get("source") or "LLM research")
-        snapshot.set_source(person if field.scope == "person" else None, field.key, source)
+        snapshot.set_source(scope, field.key, source)
+        changes.append(
+            {
+                "field_key": field.key,
+                "person": scope,
+                "previous": previous,
+                "previous_source": previous_source,
+                "applied": written,
+            }
+        )
         if field.key == "mortgage_annual" and person in {"self", "wife"}:
             from app.core.presentation.spending_builder import (
                 sync_mortgage_into_spending_breakdown,
@@ -216,4 +230,10 @@ def apply_llm_suggestions(snapshot: PlanningSnapshot, applications: list[dict[st
     message = f"Updated {applied} field(s) from AI research."
     if skipped:
         message += f" Skipped {skipped} invalid value(s)."
-    return {"ok": True, "applied": applied, "skipped": skipped, "message": message}
+    return {
+        "ok": True,
+        "applied": applied,
+        "skipped": skipped,
+        "message": message,
+        "changes": changes,
+    }

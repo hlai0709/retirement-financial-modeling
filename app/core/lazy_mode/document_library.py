@@ -71,11 +71,12 @@ def find_duplicate(
     content_hash: str,
     person: str | None,
 ) -> dict[str, Any] | None:
-    """Same document type + person + file bytes already in the library."""
+    """Same person and file bytes already in the library, whatever the document type."""
+    del document_id
     if not content_hash:
         return None
     want_person = _person_key(person)
-    for entry in list_library(snapshot, document_id=document_id):
+    for entry in list_library(snapshot):
         if _person_key(entry.get("person")) != want_person:
             continue
         existing = str(entry.get("content_hash") or "")
@@ -423,6 +424,7 @@ def remove_entry(snapshot: PlanningSnapshot, entry_id: str) -> dict[str, Any]:
     if match is None:
         return {"ok": False, "message": "Document not found in library."}
 
+    reverted = _revert_applied_fields(snapshot, match)
     snapshot.document_library = [e for e in entries if str(e.get("id")) != entry_id]
     stored = str(match.get("stored_path") or "")
     if stored_path_in_library(stored):
@@ -430,11 +432,38 @@ def remove_entry(snapshot: PlanningSnapshot, entry_id: str) -> dict[str, Any]:
             Path(stored).unlink(missing_ok=True)
         except OSError:
             pass
+    message = f"Removed {match.get('original_name') or 'file'}."
+    if reverted:
+        message += f" Restored {reverted} field(s) this file had filled in."
     return {
         "ok": True,
-        "message": f"Removed {match.get('original_name') or 'file'}.",
+        "message": message,
         "document_id": match.get("document_id"),
+        "reverted": reverted,
     }
+
+
+def _revert_applied_fields(snapshot: PlanningSnapshot, entry: dict[str, Any]) -> int:
+    """Put back the values this entry wrote, when the plan still shows those values."""
+    from config.model_fields import FIELDS_BY_KEY
+
+    restored = 0
+    for change in list(entry.get("applied_revert") or []):
+        field = FIELDS_BY_KEY.get(str(change.get("field_key") or ""))
+        if field is None:
+            continue
+        person = change.get("person")
+        if field.scope == "person" and person not in {"self", "wife"}:
+            continue
+        scope = person if field.scope == "person" else None
+        current = snapshot.get_raw(field, person=scope)
+        applied = str(change.get("applied") or "")
+        if str(current).strip() != applied.strip():
+            continue
+        snapshot.set_raw(field, str(change.get("previous") or ""), person=scope)
+        snapshot.set_source(scope, field.key, str(change.get("previous_source") or "Manual"))
+        restored += 1
+    return restored
 
 
 def set_entry_person(

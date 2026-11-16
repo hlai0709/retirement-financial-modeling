@@ -235,6 +235,13 @@ def apply_document_import(
     if _is_tax_return_import(document_type=document_type, document_label=document_label):
         replaced_entries, cleared_fields = _replace_prior_tax_return_imports(snapshot)
 
+    from app.core.lazy_mode.orchestrator import retarget_stacked_import_rows
+
+    rows = retarget_stacked_import_rows(
+        snapshot,
+        rows,
+        document_id=document_type,
+    )
     result = apply_llm_suggestions(snapshot, rows)
     applied = int(result.get("applied", 0))
     field_details: list[dict[str, Any]] = []
@@ -284,4 +291,5 @@ def apply_document_import(
         "replaced_prior_tax_returns": replaced_entries,
         "cleared_prior_fields": cleared_fields,
         "import_history": list(snapshot.import_history),
+        "changes": list(result.get("changes") or []),
     }

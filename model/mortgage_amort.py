@@ -31,6 +31,27 @@ def months_to_payoff(
     return max(1, int(math.ceil(n - 1e-9)))
 
 
+def payoff_calendar(
+    principal: float,
+    monthly_pi: float,
+    annual_rate_pct: float,
+    *,
+    as_of_year: int,
+    as_of_month: int = 1,
+) -> tuple[int, int] | None:
+    """(year, month) of the final payment. Month is 1–12."""
+    months = months_to_payoff(principal, monthly_pi, annual_rate_pct)
+    if months is None:
+        return None
+    month = max(1, min(12, int(as_of_month)))
+    end_index = (month - 1) + months
+    year = int(as_of_year) + (end_index - 1) // 12
+    payoff_month = ((end_index - 1) % 12) + 1
+    if year < 2020 or year > 2080:
+        return None
+    return year, payoff_month
+
+
 def payoff_calendar_year(
     principal: float,
     monthly_pi: float,
@@ -40,16 +61,16 @@ def payoff_calendar_year(
     as_of_month: int = 1,
 ) -> int | None:
     """Calendar year of the final payment (inclusive)."""
-    months = months_to_payoff(principal, monthly_pi, annual_rate_pct)
-    if months is None:
+    found = payoff_calendar(
+        principal,
+        monthly_pi,
+        annual_rate_pct,
+        as_of_year=as_of_year,
+        as_of_month=as_of_month,
+    )
+    if found is None:
         return None
-    month = max(1, min(12, int(as_of_month)))
-    # months remaining including the current due payment
-    end_index = (month - 1) + months  # 1-based month index from Jan of as_of_year
-    year = int(as_of_year) + (end_index - 1) // 12
-    if year < 2020 or year > 2080:
-        return None
-    return year
+    return found[0]
 
 
 def amortization_summary(
@@ -61,19 +82,21 @@ def amortization_summary(
     as_of_month: int = 1,
 ) -> dict[str, Any] | None:
     months = months_to_payoff(principal, monthly_pi, annual_rate_pct)
-    year = payoff_calendar_year(
+    found = payoff_calendar(
         principal,
         monthly_pi,
         annual_rate_pct,
         as_of_year=as_of_year,
         as_of_month=as_of_month,
     )
-    if months is None or year is None:
+    if months is None or found is None:
         return None
+    year, payoff_month = found
     return {
         "months_remaining": months,
         "years_remaining": round(months / 12.0, 1),
         "payoff_year": year,
+        "payoff_month": payoff_month,
         "principal": round(principal, 2),
         "monthly_pi": round(monthly_pi, 2),
         "annual_rate_pct": annual_rate_pct,

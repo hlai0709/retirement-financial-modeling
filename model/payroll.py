@@ -5,7 +5,12 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from config.policy.tables import policy_for_projection
-from model.cpa_tax import ItemizedInputs, federal_tax_cpa_precision, normalize_planning_precision
+from model.cpa_tax import (
+    ItemizedInputs,
+    federal_tax_cpa_precision,
+    has_itemized_amounts,
+    normalize_planning_precision,
+)
 from model.taxes import (
     TaxTable,
     federal_income_tax,
@@ -100,6 +105,21 @@ def compute_working_year_tax_detail(
             deduction_method = cpa.deduction_method
             federal_deduction = cpa.deduction_used
             amt_surcharge = cpa.amt_surcharge
+        elif has_itemized_amounts(itemized_inputs):
+            chosen = federal_tax_cpa_precision(
+                ordinary_income=wages,
+                ltcg=0.0,
+                table=table,
+                filing_status=filing_status,
+                seniors_65_count=seniors_65_count,
+                inflation_factor=inflation_factor,
+                itemized=itemized_inputs,
+                agi=wages,
+                tax_year=tax_year,
+            )
+            federal = chosen.total_federal - chosen.amt_surcharge
+            deduction_method = chosen.deduction_method
+            federal_deduction = chosen.deduction_used
         else:
             federal = federal_income_tax(max(0.0, wages - table.standard_deduction), table)
     else:

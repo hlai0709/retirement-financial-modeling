@@ -526,7 +526,12 @@ def compute_retirement_tax_detail(
     """Return federal (incl. NIIT/AMT), state, and taxable Social Security detail."""
     from model.state_taxes import compute_state_income_tax, state_profile
 
-    from model.cpa_tax import ItemizedInputs, federal_tax_cpa_precision, normalize_planning_precision
+    from model.cpa_tax import (
+        ItemizedInputs,
+        federal_tax_cpa_precision,
+        has_itemized_amounts,
+        normalize_planning_precision,
+    )
 
     precision = normalize_planning_precision(planning_precision)
     itemized_inputs = itemized or ItemizedInputs()
@@ -589,6 +594,32 @@ def compute_retirement_tax_detail(
             deduction_method = cpa.deduction_method
             amt_surcharge = cpa.amt_surcharge
             federal_deduction = cpa.deduction_used
+        elif has_itemized_amounts(itemized_inputs):
+            # Entered SALT, interest, charity, or medical apply in standard mode.
+            # AMT stays in CPA precision.
+            agi = (
+                earned_income
+                + pension_gross
+                + rental_gross
+                + split.ordinary
+                + split.ltcg
+                + ss_taxable
+                + roth_conversion
+            )
+            chosen = federal_tax_cpa_precision(
+                ordinary_income=ordinary_income,
+                ltcg=split.ltcg,
+                table=table,
+                filing_status=filing_status,
+                seniors_65_count=seniors_65_count,
+                inflation_factor=inflation_factor,
+                itemized=itemized_inputs,
+                agi=agi,
+                tax_year=tax_year,
+            )
+            federal = chosen.total_federal - chosen.amt_surcharge
+            deduction_method = chosen.deduction_method
+            federal_deduction = chosen.deduction_used
         else:
             federal, _, _ = federal_tax_with_ltcg(
                 ordinary_income=ordinary_income,

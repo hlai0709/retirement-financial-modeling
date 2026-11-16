@@ -42,6 +42,18 @@ class CpaFederalTaxResult:
     deduction_method: str
 
 
+def has_itemized_amounts(itemized: ItemizedInputs) -> bool:
+    return any(
+        value > 0
+        for value in (
+            itemized.salt,
+            itemized.mortgage_interest,
+            itemized.charitable,
+            itemized.medical,
+        )
+    )
+
+
 def normalize_planning_precision(value: object) -> str:
     mode = str(value or "standard").strip().lower()
     return mode if mode in VALID_PLANNING_PRECISION else "standard"
@@ -114,17 +126,31 @@ def itemized_for_year(
     if itemized.mortgage_interest <= 0:
         return itemized
     payoffs: list[int] = []
+    open_ended = False
     for person in persons.values():
-        raw = person.get("mortgage_payoff_year")
-        if raw in (None, ""):
-            continue
-        try:
-            payoff = int(float(str(raw).replace(",", "").replace("$", "")))
-        except (TypeError, ValueError):
-            continue
-        if 1900 <= payoff <= 2100:
-            payoffs.append(payoff)
-    if payoffs and year > max(payoffs):
+        for annual_key, year_key in (
+            ("mortgage_annual", "mortgage_payoff_year"),
+            ("mortgage_second_annual", "mortgage_second_payoff_year"),
+        ):
+            if float(person.get(annual_key, 0) or 0) <= 0 and annual_key != "mortgage_annual":
+                continue
+            if annual_key == "mortgage_annual" and float(person.get(annual_key, 0) or 0) <= 0:
+                if not person.get(year_key):
+                    continue
+            raw = person.get(year_key)
+            if raw in (None, ""):
+                if float(person.get(annual_key, 0) or 0) > 0:
+                    open_ended = True
+                continue
+            try:
+                payoff = int(float(str(raw).replace(",", "").replace("$", "")))
+            except (TypeError, ValueError):
+                continue
+            if 1900 <= payoff <= 2100:
+                payoffs.append(payoff)
+    if open_ended or not payoffs:
+        return itemized
+    if year > max(payoffs):
         return replace(itemized, mortgage_interest=0.0)
     return itemized
 

@@ -312,9 +312,15 @@ def derived_roth_portfolio_pct(
     *,
     updates: list[dict[str, Any]] | None = None,
 ) -> float | None:
-    """Roth share of explicit asset buckets: roth / (taxable + traditional + roth)."""
-    total = 0.0
+    """Roth share of retirement accounts: roth / (traditional + roth).
+
+    The percentage splits a balance that has no account buckets into traditional
+    versus Roth. Taxable assets are not in that split. A household that holds
+    only taxable accounts is 0% Roth instead of leaving the field blank.
+    """
+    retirement = 0.0
     roth_total = 0.0
+    has_taxable = False
     has_retirement_bucket = False
     for person in snapshot.persons:
         traditional = _parse_money_field(
@@ -338,15 +344,18 @@ def derived_roth_portfolio_pct(
             updates=updates,
             treat_zero_as_blank=True,
         )
+        if taxable is not None and taxable > 0:
+            has_taxable = True
         if traditional is None and roth is None:
-            # Still count taxable alone? No — need at least one retirement bucket.
             continue
         has_retirement_bucket = True
-        total += max(0.0, traditional or 0.0) + max(0.0, roth or 0.0) + max(0.0, taxable or 0.0)
+        retirement += max(0.0, traditional or 0.0) + max(0.0, roth or 0.0)
         roth_total += max(0.0, roth or 0.0)
-    if not has_retirement_bucket or total <= 0:
-        return None
-    return max(0.0, min(1.0, roth_total / total))
+    if not has_retirement_bucket:
+        return 0.0 if has_taxable else None
+    if retirement <= 0:
+        return 0.0
+    return max(0.0, min(1.0, roth_total / retirement))
 
 
 def maybe_derive_roth_portfolio_pct(
@@ -354,7 +363,7 @@ def maybe_derive_roth_portfolio_pct(
     *,
     updates: list[dict[str, Any]] | None = None,
 ) -> bool:
-    """Fill Roth Portfolio % from traditional / Roth (/ taxable) balances when known."""
+    """Fill Roth Portfolio % from traditional and Roth balances when known."""
     pct_field = FIELDS_BY_KEY.get("roth_portfolio_pct")
     if pct_field is None:
         return False

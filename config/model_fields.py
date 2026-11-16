@@ -377,7 +377,7 @@ SHARED_FIELDS: tuple[ModelField, ...] = (
         0,
         "money",
         "manual",
-        description="State/local taxes paid — capped at $10,000 for CPA itemized deduction.",
+        description="State and local taxes. The deduction uses the statutory cap, including the 2025–2029 increase.",
         llm_research=False,
     ),
     ModelField(
@@ -387,7 +387,7 @@ SHARED_FIELDS: tuple[ModelField, ...] = (
         0,
         "money",
         "manual",
-        description="Annual mortgage interest for CPA Schedule A (used only in cpa mode).",
+        description="Annual mortgage interest. Used when it beats the standard deduction, and stops after the last payoff year.",
         llm_research=False,
     ),
     ModelField(
@@ -920,8 +920,8 @@ PERSON_FIELDS: tuple[ModelField, ...] = (
         "money",
         "manual",
         description=(
-            "Annual mortgage payment (P&I + escrow if in payment) until payoff year. "
-            "Sum all mortgages into this one field. Not inflated (fixed nominal)."
+            "Annual principal and interest on the first mortgage until its payoff year. "
+            "Escrow is not included. Not inflated (fixed nominal)."
         ),
         llm_research=False,
     ),
@@ -935,8 +935,55 @@ PERSON_FIELDS: tuple[ModelField, ...] = (
         description=(
             "Calendar year the mortgage ends (often computed from balance, P&I, and rate). "
             "Blank/0 = payment continues every year while Mortgage Annual is set. "
-            "After this year, retirement living expenses drop by the mortgage amount."
+            "After this year the first mortgage payment stops. "
+            "In the payoff year only the months through Mortgage Payoff Month are charged."
         ),
+        llm_research=False,
+    ),
+    ModelField(
+        "mortgage_payoff_month",
+        "Mortgage Payoff Month",
+        "person",
+        "",
+        "int",
+        "manual",
+        description=(
+            "Month number (1–12) of the first mortgage's last payment. "
+            "Blank charges the full payoff year."
+        ),
+        llm_research=False,
+    ),
+    ModelField(
+        "mortgage_second_annual",
+        "Second Mortgage Annual",
+        "person",
+        0,
+        "money",
+        "manual",
+        description=(
+            "Principal and interest on another mortgage. It ends on its own payoff year, "
+            "not the first loan's year."
+        ),
+        llm_research=False,
+    ),
+    ModelField(
+        "mortgage_second_payoff_year",
+        "Second Mortgage Payoff Year",
+        "person",
+        "",
+        "year",
+        "manual",
+        description="Calendar year the second mortgage's last payment falls in.",
+        llm_research=False,
+    ),
+    ModelField(
+        "mortgage_second_payoff_month",
+        "Second Mortgage Payoff Month",
+        "person",
+        "",
+        "int",
+        "manual",
+        description="Month number (1–12) of the second mortgage's last payment. Blank charges that full year.",
         llm_research=False,
     ),
     ModelField(

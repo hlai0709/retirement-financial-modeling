@@ -33,6 +33,7 @@ from model.expenses import (
     ExpensePolicy,
     living_person_names,
     person_mortgage_annual,
+    person_one_time_expense,
     person_retirement_living_expense,
 )
 from model.ltc import person_ltc_annual
@@ -502,6 +503,42 @@ def deceased_mortgage_carry(
         if name in living:
             continue
         total += person_mortgage_annual(person, year=year)
+    return total
+
+
+def deceased_base_carry(
+    persons: dict[str, dict[str, Any]],
+    flows: dict[str, PersonFlows],
+    living: list[str],
+    ages: dict[str, int],
+    *,
+    year: int,
+    inflation_factor: float,
+    expense_policy: ExpensePolicy,
+) -> float:
+    """Keep a deceased person's base living cost. Shared bills do not vanish."""
+    if len(living) != 1:
+        return 0.0
+    total = 0.0
+    for name, person in persons.items():
+        if name in living or name not in flows:
+            continue
+        living_cost, _phase = person_retirement_living_expense(
+            flows[name].expenses,
+            person,
+            age=ages[name],
+            year=year,
+            retirement_age=int(person.get("retirement_age", 65) or 65),
+            policy=expense_policy,
+            inflation_factor=inflation_factor,
+        )
+        living_cost -= person_mortgage_annual(person, year=year)
+        living_cost -= person_one_time_expense(
+            person,
+            year=year,
+            inflation_factor=inflation_factor,
+        )
+        total += max(0.0, living_cost)
     return total
 
 
@@ -1136,7 +1173,17 @@ def _solve_cash_flow_taxes(
                     inflation_factor=inflation_factor,
                     expense_policy=expense_policy,
                 )
-        living_expenses += deceased_mortgage_carry(persons, retired + working, year)
+        living_names = retired + working
+        living_expenses += deceased_base_carry(
+            persons,
+            flows,
+            living_names,
+            ages,
+            year=year,
+            inflation_factor=inflation_factor,
+            expense_policy=expense_policy,
+        )
+        living_expenses += deceased_mortgage_carry(persons, living_names, year)
         joint_aca_ages = aca_enrollee_ages(
             retired=retired,
             ages=ages,
@@ -1314,6 +1361,15 @@ def _solve_cash_flow_taxes(
             living_expenses = 0.0
         living_names = retired + working
         if name in living_names and len(living_names) == 1:
+            living_expenses += deceased_base_carry(
+                persons,
+                flows,
+                living_names,
+                ages,
+                year=year,
+                inflation_factor=inflation_factor,
+                expense_policy=expense_policy,
+            )
             living_expenses += deceased_mortgage_carry(persons, living_names, year)
         if len(living_names) == 1 and name in living_names:
             ss_gross = social_security_gross(flows, living_names, list(persons))
@@ -1696,6 +1752,15 @@ def simulate_year(
             inflation_factor=inflation_factor,
         )
         expense_phases.append(phase_label)
+    retirement_expenses += deceased_base_carry(
+        persons,
+        flows,
+        living,
+        ages,
+        year=year,
+        inflation_factor=inflation_factor,
+        expense_policy=expense_policy,
+    )
     retirement_expenses += deceased_mortgage_carry(persons, living, year)
     if len(set(expense_phases)) == 1:
         expense_phase = expense_phases[0] if expense_phases else "flat"

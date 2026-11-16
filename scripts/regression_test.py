@@ -604,7 +604,7 @@ def run_regression() -> RegressionReport:
         both = df[df["Year"] == 2026].iloc[0]
         survivor = df[df["Year"] == 2027].iloc[0]
         assert abs(both["Expenses"] - 87_000) < 1, both["Expenses"]
-        assert abs(survivor["Expenses"] - 52_000) < 1, survivor["Expenses"]
+        assert abs(survivor["Expenses"] - 87_000) < 1, survivor["Expenses"]
         assert abs(survivor["SS"] - 30_000) < 1, survivor["SS"]
         return f"survivor expenses ${survivor['Expenses']:,.0f}, SS ${survivor['SS']:,.0f}"
 
@@ -654,7 +654,8 @@ def run_regression() -> RegressionReport:
             document_id="mortgage_statement",
             person="self",
         )
-        assert float(str(second[0].raw_value).replace(",", "")) == 42_000
+        assert second[0].field_key == "mortgage_second_annual"
+        assert float(str(second[0].raw_value).replace(",", "")) == 18_000
         form = _stack_mortgage_if_needed(
             snapshot,
             [Suggestion("mortgage_annual", "9000", "1098 interest")],
@@ -698,6 +699,14 @@ def run_regression() -> RegressionReport:
         assert form_rows["itemized_mortgage_interest"].confidence == "high"
         assert "mortgage_annual" not in form_rows
 
+        escrow_only = {
+            row.field_key: row
+            for row in extract_mortgage_statement_suggestions(
+                "Statement date 03/01/2026\nCurrent Total Pymt $2,500.00\n"
+            )
+        }
+        assert "mortgage_annual" not in escrow_only
+
         both = extract_property_tax_bill_suggestions(
             "Total Amount Due $8,000.00\nFirst installment $4,000.00"
         )
@@ -706,6 +715,72 @@ def run_regression() -> RegressionReport:
         only_installment = extract_property_tax_bill_suggestions("First installment $4,000.00")
         doubled = float(str(only_installment[0].raw_value).replace(",", "").replace("$", ""))
         assert abs(doubled - 8_000) < 1, doubled
+        from app.core.document_ingestion.ingestion_controller import apply_document_import
+
+        first = apply_document_import(
+            snapshot,
+            [
+                {
+                    "apply": True,
+                    "field_key": "mortgage_annual",
+                    "raw_value": "24000",
+                    "person": "self",
+                    "source": "Imported from first.pdf",
+                },
+                {
+                    "apply": True,
+                    "field_key": "mortgage_payoff_year",
+                    "raw_value": "2050",
+                    "person": "self",
+                    "source": "Imported from first.pdf",
+                },
+            ],
+            document_type="mortgage_statement",
+            document_label="first.pdf",
+        )
+        assert first["ok"]
+        second_apply = apply_document_import(
+            snapshot,
+            [
+                {
+                    "apply": True,
+                    "field_key": "mortgage_annual",
+                    "raw_value": "18000",
+                    "person": "self",
+                    "source": "Imported from second.pdf",
+                },
+                {
+                    "apply": True,
+                    "field_key": "mortgage_payoff_year",
+                    "raw_value": "2044",
+                    "person": "self",
+                    "source": "Imported from second.pdf",
+                },
+            ],
+            document_type="mortgage_statement",
+            document_label="second.pdf",
+        )
+        assert second_apply["ok"]
+        assert snapshot.get_raw(FIELDS_BY_KEY["mortgage_annual"], person="self") == "24000"
+        assert snapshot.get_raw(FIELDS_BY_KEY["mortgage_payoff_year"], person="self") == "2050"
+        assert snapshot.get_raw(FIELDS_BY_KEY["mortgage_second_annual"], person="self") == "18000"
+        assert snapshot.get_raw(FIELDS_BY_KEY["mortgage_second_payoff_year"], person="self") == "2044"
+        tax_apply = apply_document_import(
+            snapshot,
+            [
+                {
+                    "apply": True,
+                    "field_key": "property_tax_annual",
+                    "raw_value": "3000",
+                    "person": "self",
+                    "source": "Imported from parcel.pdf",
+                }
+            ],
+            document_type="property_tax_bill",
+            document_label="parcel.pdf",
+        )
+        assert tax_apply["ok"]
+        assert snapshot.get_raw(FIELDS_BY_KEY["property_tax_annual"], person="self") == "11000"
         return "same loan refreshes; a second loan stacks; 1098 does not add a payment"
 
     _run_check(
@@ -727,6 +802,141 @@ def run_regression() -> RegressionReport:
         "Core",
         "Document library deletes stay in the library folder",
         check_library_delete_stays_in_folder,
+    )
+
+    def check_second_loan_and_payoff_month():
+        from model.expenses import person_mortgage_annual
+
+        person = {
+            "mortgage_annual": 24_000,
+            "mortgage_payoff_year": 2030,
+            "mortgage_payoff_month": 6,
+            "mortgage_second_annual": 12_000,
+            "mortgage_second_payoff_year": 2040,
+            "mortgage_second_payoff_month": 3,
+        }
+        assert abs(person_mortgage_annual(person, year=2029) - 36_000) < 1
+        june = person_mortgage_annual(person, year=2030)
+        assert abs(june - (24_000 * 6 / 12 + 12_000)) < 1, june
+        later = person_mortgage_annual(person, year=2035)
+        assert abs(later - 12_000) < 1, later
+        assert person_mortgage_annual(person, year=2041) == 0
+        return "each mortgage ends on its own date; the payoff year is not 12 months"
+
+    _run_check(
+        report,
+        "Core",
+        "Second mortgage keeps its own payoff month",
+        check_second_loan_and_payoff_month,
+    )
+
+    def check_standard_mode_uses_itemized_amounts():
+        from model.cpa_tax import ItemizedInputs
+        from model.taxes import compute_retirement_tax_detail, tax_table_for_filing_status
+
+        table = tax_table_for_filing_status("mfj", inflation_factor=1.0)
+        plain = compute_retirement_tax_detail(
+            ss_gross=0,
+            pension_gross=0,
+            rental_gross=0,
+            earned_income=0,
+            withdrawal_gross=200_000,
+            roth_fraction=0,
+            filing_status="mfj",
+            inflation_factor=1.0,
+            ss_tax_method="irs_provisional",
+            ss_taxable_fraction=0,
+            tax_mode="federal_brackets",
+            flat_rate=0,
+            table=table,
+            state_tax_enabled=False,
+            taxable_portfolio_fraction=0,
+            taxable_gain_fraction=0,
+            planning_precision="standard",
+            itemized=ItemizedInputs(),
+            tax_year=2026,
+        )
+        itemized = compute_retirement_tax_detail(
+            ss_gross=0,
+            pension_gross=0,
+            rental_gross=0,
+            earned_income=0,
+            withdrawal_gross=200_000,
+            roth_fraction=0,
+            filing_status="mfj",
+            inflation_factor=1.0,
+            ss_tax_method="irs_provisional",
+            ss_taxable_fraction=0,
+            tax_mode="federal_brackets",
+            flat_rate=0,
+            table=table,
+            state_tax_enabled=False,
+            taxable_portfolio_fraction=0,
+            taxable_gain_fraction=0,
+            planning_precision="standard",
+            itemized=ItemizedInputs(mortgage_interest=80_000),
+            tax_year=2026,
+        )
+        assert itemized.federal < plain.federal
+        assert itemized.deduction_method == "itemized"
+        return (
+            f"standard mode itemizes ${plain.federal:,.0f} → "
+            f"${itemized.federal:,.0f}"
+        )
+
+    _run_check(
+        report,
+        "Core",
+        "Standard mode uses entered itemized amounts",
+        check_standard_mode_uses_itemized_amounts,
+    )
+
+    def check_delete_restores_applied_import():
+        from app.core.lazy_mode.document_library import find_duplicate, remove_entry
+        from app.core.planning_snapshot import PlanningSnapshot
+        from config.model_fields import FIELDS_BY_KEY
+
+        snapshot = PlanningSnapshot()
+        field = FIELDS_BY_KEY["mortgage_annual"]
+        snapshot.set_raw(field, "10000", person="self")
+        snapshot.document_library.append(
+            {
+                "id": "doc-1",
+                "document_id": "mortgage_statement",
+                "person": "self",
+                "content_hash": "abc",
+                "status": "applied",
+                "original_name": "statement.pdf",
+                "stored_path": "",
+                "applied_revert": [
+                    {
+                        "field_key": "mortgage_annual",
+                        "person": "self",
+                        "previous": "10000",
+                        "previous_source": "Manual",
+                        "applied": "24000",
+                    }
+                ],
+            }
+        )
+        snapshot.set_raw(field, "24000", person="self")
+        same_bytes = find_duplicate(
+            snapshot,
+            document_id="form_1098",
+            content_hash="abc",
+            person="self",
+        )
+        assert same_bytes is not None
+        result = remove_entry(snapshot, "doc-1")
+        assert result["reverted"] == 1
+        assert snapshot.get_raw(field, person="self") == "10000"
+        return "deleting an applied file restores the previous payment"
+
+    _run_check(
+        report,
+        "Core",
+        "Deleting an import restores the fields it filled",
+        check_delete_restores_applied_import,
     )
 
     # --- Phase 1: Security + data layer ---
@@ -3882,8 +4092,8 @@ def run_regression() -> RegressionReport:
         # Roth % = 50k / 350k ≈ 14.2857%
         from app.core.presentation.field_derived import derived_roth_portfolio_pct
 
-        assert abs(derived_roth_portfolio_pct(buckets) - (50_000 / 350_000)) < 1e-9
-        assert abs(float(buckets.shared["roth_portfolio_pct"]) - (50_000 / 350_000 * 100)) < 1e-6
+        assert abs(derived_roth_portfolio_pct(buckets) - (50_000 / 250_000)) < 1e-9
+        assert abs(float(buckets.shared["roth_portfolio_pct"]) - (50_000 / 250_000 * 100)) < 1e-6
 
         medigap = blank_planning_snapshot()
         medigap.persons["self"]["medigap_plan"] = "plan_g"

@@ -56,7 +56,7 @@ FIELD_GUIDED_QUESTIONS: dict[str, str] = {
     "initial_traditional_ira": "What is your traditional IRA / 401(k) balance?",
     "initial_roth_ira": "What is your Roth IRA / Roth 401(k) balance?",
     "asset_share_pct": "What share of household assets do you hold?",
-    "roth_portfolio_pct": "What percentage of your portfolio is in Roth accounts? (Auto-fills from Roth ÷ taxable + traditional + Roth when balances are set.)",
+    "roth_portfolio_pct": "What percentage of your retirement accounts is Roth? (Auto-fills from Roth ÷ traditional + Roth. Taxable accounts are separate.)",
     "base_expenses": "What are your expected annual base living expenses in retirement?",
     "expense_phase_mode": "Should spending stay flat or vary by age band (Go-Go / Slow-Go / No-Go)?",
     "expense_go_go_end_age": "Until what age is the active 'Go-Go' spending phase?",
