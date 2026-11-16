@@ -128,11 +128,12 @@ def _apply_default(snapshot: PlanningSnapshot, suggestion: ExtractedFieldSuggest
     person = suggestion.person if field.scope == "person" else None
     # High-confidence document extracts default on (user can uncheck) so SSA PIA mode
     # overwrites a prior "earnings" mode when importing a statement.
-    if (
-        suggestion.field_key == "itemized_mortgage_interest"
-        and str(suggestion.confidence or "").lower() != "high"
-    ):
+    if suggestion.field_key in {
+        "itemized_mortgage_interest",
+        "itemized_mortgage_interest_second",
+    } and str(suggestion.confidence or "").lower() != "high":
         # Year-to-date statement interest is not a full-year deduction.
+        # A second-loan refresh retargets the row before this decision.
         return False
     if str(suggestion.confidence or "").lower() == "high":
         return True
@@ -229,6 +230,16 @@ def ingest_document(snapshot: PlanningSnapshot, path: str) -> dict[str, Any]:
     }
 
 
+def _property_tax_component(row: dict[str, Any]) -> str:
+    """The single bill this row represents, not the summed total."""
+    quote = str(row.get("source_quote") or "")
+    if "component=" in quote:
+        return quote.split("component=", 1)[1].split(";", 1)[0].strip()
+    if str(row.get("field_key") or "") != "property_tax_annual":
+        return ""
+    return str(row.get("raw_value") or "").replace(",", "").replace("$", "").strip()
+
+
 def _remember_property_tax_bills(snapshot: PlanningSnapshot, rows: list[dict[str, Any]]) -> None:
     """Keep each bill amount so a later refresh can replace one bill instead of the sum."""
     for row in rows:
@@ -236,11 +247,21 @@ def _remember_property_tax_bills(snapshot: PlanningSnapshot, rows: list[dict[str
             continue
         if str(row.get("field_key") or "") != "property_tax_annual":
             continue
+        component = _property_tax_component(row)
+        if component:
+            row["bill_component"] = component
         quote = str(row.get("source_quote") or "")
         marker = "bills="
-        if marker not in quote:
+        if marker in quote:
+            encoded = quote.split(marker, 1)[1].split(";", 1)[0].strip()
+        elif component:
+            try:
+                value = float(component)
+            except ValueError:
+                continue
+            encoded = str(int(round(value))) if abs(value - round(value)) < 1e-6 else f"{value:.2f}"
+        else:
             continue
-        encoded = quote.split(marker, 1)[1].split(";", 1)[0].strip()
         if not encoded:
             continue
         person = row.get("person") if row.get("person") in {"self", "wife"} else "self"

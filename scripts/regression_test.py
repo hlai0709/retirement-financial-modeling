@@ -879,6 +879,230 @@ def run_regression() -> RegressionReport:
         check_mortgage_import_does_not_double_a_refresh,
     )
 
+    def check_second_loan_ytd_interest_and_unmatched_1098():
+        from app.core.document_ingestion.extraction import ExtractedFieldSuggestion
+        from app.core.document_ingestion.ingestion_controller import build_review_rows
+        from app.core.lazy_mode.orchestrator import _stack_mortgage_if_needed
+        from app.core.planning_snapshot import PlanningSnapshot
+        from config.model_fields import FIELDS_BY_KEY
+
+        snapshot = PlanningSnapshot()
+        snapshot.set_raw(FIELDS_BY_KEY["mortgage_annual"], "24000", person="self")
+        snapshot.set_source("self", "mortgage_annual", "Mortgage statement import")
+        snapshot.set_raw(FIELDS_BY_KEY["mortgage_payoff_year"], "2050", person="self")
+        snapshot.set_raw(FIELDS_BY_KEY["mortgage_second_annual"], "18000", person="self")
+        snapshot.set_source("self", "mortgage_second_annual", "Mortgage statement import")
+        snapshot.set_raw(FIELDS_BY_KEY["mortgage_second_payoff_year"], "2040", person="self")
+
+        def suggestion(key: str, raw: str, confidence: str) -> ExtractedFieldSuggestion:
+            return ExtractedFieldSuggestion(
+                field_key=key,
+                person="self",
+                label=key,
+                raw_value=raw,
+                display_value=raw,
+                confidence=confidence,
+                source_quote="Mortgage statement year-to-date interest (not a full year)",
+                document_type="pdf",
+            )
+
+        stacked = _stack_mortgage_if_needed(
+            snapshot,
+            [
+                suggestion("mortgage_annual", "19000", "high"),
+                suggestion("mortgage_payoff_year", "2040", "high"),
+                suggestion("itemized_mortgage_interest", "5000", "low"),
+            ],
+            document_id="mortgage_statement",
+            person="self",
+        )
+        review = build_review_rows(snapshot, stacked, document_label="second.pdf")
+        interest = next(item for item in review if "interest" in str(item["field_key"]))
+        assert interest["field_key"] == "itemized_mortgage_interest_second"
+        assert interest["apply"] is False
+
+        form = _stack_mortgage_if_needed(
+            snapshot,
+            [
+                suggestion("itemized_mortgage_interest", "4000", "high"),
+                suggestion("mortgage_payoff_year", "2040", "high"),
+            ],
+            document_id="form_1098",
+            person="self",
+        )
+        form_review = build_review_rows(snapshot, form, document_label="second-1098.pdf")
+        form_interest = next(item for item in form_review if "interest" in str(item["field_key"]))
+        assert form_interest["field_key"] == "itemized_mortgage_interest_second"
+        assert form_interest["apply"] is True
+
+        empty = PlanningSnapshot()
+        seeded = _stack_mortgage_if_needed(
+            empty,
+            [
+                suggestion("mortgage_annual", "24000", "high"),
+                suggestion("itemized_mortgage_interest", "9000", "high"),
+                suggestion("mortgage_payoff_year", "2050", "high"),
+            ],
+            document_id="form_1098",
+            person="self",
+        )
+        seeded_keys = [item.field_key for item in seeded]
+        assert "mortgage_annual" not in seeded_keys
+        assert "itemized_mortgage_interest" in seeded_keys
+
+        snapshot.set_raw(FIELDS_BY_KEY["itemized_mortgage_interest"], "9000")
+        snapshot.set_raw(FIELDS_BY_KEY["itemized_mortgage_interest_second"], "4000")
+        unmatched = _stack_mortgage_if_needed(
+            snapshot,
+            [
+                suggestion("itemized_mortgage_interest", "15000", "high"),
+                suggestion("mortgage_payoff_year", "2030", "high"),
+            ],
+            document_id="form_1098",
+            person="self",
+        )
+        assert [item.field_key for item in unmatched] == []
+
+        snapshot.set_raw(FIELDS_BY_KEY["itemized_mortgage_interest_second"], "0")
+        filled = {
+            item.field_key: item
+            for item in _stack_mortgage_if_needed(
+                snapshot,
+                [
+                    suggestion("itemized_mortgage_interest", "15000", "high"),
+                    suggestion("mortgage_payoff_year", "2030", "high"),
+                ],
+                document_id="form_1098",
+                person="self",
+            )
+        }
+        assert filled["itemized_mortgage_interest_second"].raw_value == "15000"
+        assert "mortgage_payoff_year" not in filled
+        assert "mortgage_second_payoff_year" not in filled
+        return "second-loan year-to-date interest stays off; a 1098 does not invent a payment"
+
+    _run_check(
+        report,
+        "Core",
+        "Second-loan year-to-date interest is not applied by default",
+        check_second_loan_ytd_interest_and_unmatched_1098,
+    )
+
+    def check_property_tax_list_follows_edits_and_deletes():
+        from app.core.document_ingestion.ingestion_controller import apply_document_import
+        from app.core.lazy_mode.document_library import remove_entry
+        from app.core.lazy_mode.orchestrator import _stack_property_tax_if_needed
+        from app.core.planning_snapshot import PlanningSnapshot
+        from config.model_fields import FIELDS_BY_KEY
+
+        @dataclass
+        class Suggestion:
+            field_key: str
+            raw_value: str
+            source_quote: str = ""
+            display_value: str = ""
+
+        edited = PlanningSnapshot()
+        edited.set_raw(FIELDS_BY_KEY["property_tax_annual"], "9000", person="self")
+        edited.set_source("self", "property_tax_annual", "Property tax bill import")
+        edited.persons.setdefault("self", {})["_property_tax_bills"] = "8000,3000"
+        refreshed = _stack_property_tax_if_needed(
+            edited,
+            [Suggestion("property_tax_annual", "8200", "county refresh")],
+            document_id="property_tax_bill",
+            person="self",
+        )
+        assert refreshed[0].raw_value == "8200"
+
+        edited.set_raw(FIELDS_BY_KEY["property_tax_annual"], "15000", person="self")
+        added = _stack_property_tax_if_needed(
+            edited,
+            [Suggestion("property_tax_annual", "4000", "other parcel")],
+            document_id="property_tax_bill",
+            person="self",
+        )
+        assert added[0].raw_value == "19000"
+
+        def two_bills():
+            snapshot = PlanningSnapshot()
+            first = apply_document_import(
+                snapshot,
+                [
+                    {
+                        "apply": True,
+                        "field_key": "property_tax_annual",
+                        "raw_value": "8000",
+                        "person": "self",
+                        "source": "Imported from a.pdf",
+                        "source_quote": "Property tax bill — total / annual amount",
+                    }
+                ],
+                document_type="property_tax_bill",
+                document_label="a.pdf",
+            )
+            second = apply_document_import(
+                snapshot,
+                [
+                    {
+                        "apply": True,
+                        "field_key": "property_tax_annual",
+                        "raw_value": "3000",
+                        "person": "self",
+                        "source": "Imported from b.pdf",
+                        "source_quote": "Property tax bill — total / annual amount",
+                    }
+                ],
+                document_type="property_tax_bill",
+                document_label="b.pdf",
+            )
+            assert snapshot.get_raw(FIELDS_BY_KEY["property_tax_annual"], person="self") == "11000"
+            assert snapshot.persons["self"]["_property_tax_bills"] == "8000,3000"
+            assert first["changes"][0]["bill_component"] == "8000"
+            assert second["changes"][0]["bill_component"] == "3000"
+            snapshot.document_library = [
+                {
+                    "id": "bill-a",
+                    "document_id": "property_tax_bill",
+                    "person": "self",
+                    "content_hash": "a",
+                    "status": "applied",
+                    "original_name": "a.pdf",
+                    "stored_path": "",
+                    "applied_revert": first["changes"],
+                },
+                {
+                    "id": "bill-b",
+                    "document_id": "property_tax_bill",
+                    "person": "self",
+                    "content_hash": "b",
+                    "status": "applied",
+                    "original_name": "b.pdf",
+                    "stored_path": "",
+                    "applied_revert": second["changes"],
+                },
+            ]
+            return snapshot
+
+        without_first = two_bills()
+        removed_first = remove_entry(without_first, "bill-a")
+        assert removed_first["reverted"] == 1
+        assert without_first.get_raw(FIELDS_BY_KEY["property_tax_annual"], person="self") == "3000"
+        assert without_first.persons["self"]["_property_tax_bills"] == "3000"
+
+        without_second = two_bills()
+        removed_second = remove_entry(without_second, "bill-b")
+        assert removed_second["reverted"] == 1
+        assert without_second.get_raw(FIELDS_BY_KEY["property_tax_annual"], person="self") == "8000"
+        assert without_second.persons["self"]["_property_tax_bills"] == "8000"
+        return "an edited property-tax total is not rebuilt from a stale bill list"
+
+    _run_check(
+        report,
+        "Core",
+        "Property-tax bill list follows edits and deletes",
+        check_property_tax_list_follows_edits_and_deletes,
+    )
+
     def check_library_delete_stays_in_folder():
         from app.core.lazy_mode.document_library import stored_path_in_library
 

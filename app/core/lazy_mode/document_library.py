@@ -493,12 +493,29 @@ def _revert_applied_fields(snapshot: PlanningSnapshot, entry: dict[str, Any]) ->
         if field.scope == "person" and person not in {"self", "wife"}:
             continue
         scope = person if field.scope == "person" else None
+        if field.key == "property_tax_annual" and scope in {"self", "wife"}:
+            from app.core.lazy_mode.orchestrator import drop_property_tax_component
+
+            component = str(change.get("bill_component") or "")
+            if component and drop_property_tax_component(snapshot, scope, component):
+                restored += 1
+                continue
         current = snapshot.get_raw(field, person=scope)
         applied = str(change.get("applied") or "")
         if str(current).strip() != applied.strip():
             continue
         snapshot.set_raw(field, str(change.get("previous") or ""), person=scope)
         snapshot.set_source(scope, field.key, str(change.get("previous_source") or "Manual"))
+        if field.key == "property_tax_annual" and scope in {"self", "wife"}:
+            from app.core.lazy_mode.orchestrator import replace_property_tax_bill_list
+
+            try:
+                restored_total = float(
+                    str(change.get("previous") or "").replace(",", "").replace("$", "").strip() or 0
+                )
+            except ValueError:
+                restored_total = 0.0
+            replace_property_tax_bill_list(snapshot, scope, restored_total)
         restored += 1
     return restored
 

@@ -205,15 +205,16 @@ def apply_llm_suggestions(snapshot: PlanningSnapshot, applications: list[dict[st
         snapshot.set_raw(field, written, person=scope)
         source = str(row.get("source") or "LLM research")
         snapshot.set_source(scope, field.key, source)
-        changes.append(
-            {
-                "field_key": field.key,
-                "person": scope,
-                "previous": previous,
-                "previous_source": previous_source,
-                "applied": written,
-            }
-        )
+        change = {
+            "field_key": field.key,
+            "person": scope,
+            "previous": previous,
+            "previous_source": previous_source,
+            "applied": written,
+        }
+        if row.get("bill_component"):
+            change["bill_component"] = str(row.get("bill_component"))
+        changes.append(change)
         if field.key == "mortgage_annual" and person in {"self", "wife"}:
             from app.core.presentation.spending_builder import (
                 sync_mortgage_into_spending_breakdown,

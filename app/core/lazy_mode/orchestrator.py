@@ -481,7 +481,12 @@ def _same_loan(
     new_payment: float,
     new_year: int,
 ) -> bool:
-    """A refinance keeps the maturity. A similar payment with a different maturity does not."""
+    """A refinance keeps the maturity. A similar payment with a different maturity does not.
+
+    Two loans that mature within one year share a slot, even when the payment
+    changed by more than 12%. A piggyback opened with the same payoff year
+    therefore replaces the first loan. A two-year gap uses the payment test.
+    """
     if existing_payment <= 0 or new_payment <= 0:
         return False
     if existing_year > 0 and new_year > 0:
@@ -578,6 +583,87 @@ def _bill_components(snapshot: PlanningSnapshot, person: str, existing_total: fl
     return bills
 
 
+def _bills_for_total(
+    snapshot: PlanningSnapshot,
+    person: str,
+    existing_total: float,
+) -> list[float]:
+    """Components that still add up to the stored property-tax total.
+
+    A manual edit or the spending builder can change the total and leave the
+    old split behind. That split is ignored until imports record a new one.
+    A total with no list is one bill, so a very different bill is added to it.
+    """
+    bills = _bill_components(snapshot, person, existing_total)
+    if existing_total <= 0:
+        return []
+    if abs(sum(bills) - existing_total) > 1.0:
+        return [existing_total]
+    return bills
+
+
+def _store_property_tax_bills(
+    snapshot: PlanningSnapshot,
+    person: str,
+    bills: list[float],
+) -> None:
+    if person not in {"self", "wife"}:
+        return
+    bucket = snapshot.persons.setdefault(person, {})
+    if bills:
+        bucket["_property_tax_bills"] = _bill_list(bills)
+    else:
+        bucket.pop("_property_tax_bills", None)
+
+
+def drop_property_tax_component(
+    snapshot: PlanningSnapshot,
+    person: str,
+    component_text: str,
+) -> bool:
+    """Remove one stored bill and set the total to what remains.
+
+    Used when a deleted import is no longer the value on the field because a
+    later bill was added on top. A single stored bill falls through to the
+    ordinary restore.
+    """
+    from config.field_values import format_field_value
+    from config.model_fields import FIELDS_BY_KEY
+
+    field = FIELDS_BY_KEY.get("property_tax_annual")
+    if field is None or person not in {"self", "wife"}:
+        return False
+    try:
+        component = float(str(component_text).replace(",", "").replace("$", "").strip() or 0)
+    except ValueError:
+        return False
+    if component <= 0:
+        return False
+    total = _snapshot_money(snapshot, "property_tax_annual", person)
+    bills = _bill_components(snapshot, person, total)
+    if len(bills) < 2 or abs(sum(bills) - total) > 1.0:
+        return False
+    matched = next((index for index, bill in enumerate(bills) if abs(bill - component) <= 1.0), None)
+    if matched is None:
+        return False
+    del bills[matched]
+    snapshot.set_raw(field, format_field_value(field, sum(bills)), person=person)
+    _store_property_tax_bills(snapshot, person, bills)
+    return True
+
+
+def replace_property_tax_bill_list(
+    snapshot: PlanningSnapshot,
+    person: str,
+    total: float,
+) -> None:
+    """After a full restore, the old split no longer describes the total."""
+    if total > 1.0:
+        _store_property_tax_bills(snapshot, person, [total])
+    else:
+        _store_property_tax_bills(snapshot, person, [])
+
+
 def _bill_list(bills: list[float]) -> str:
     parts = []
     for value in bills:
@@ -605,9 +691,7 @@ def _stack_property_tax_if_needed(
     """Stack another property-tax bill: sum into Property Tax Annual."""
     if document_id not in {"property_tax_bill", "form_1040"} or not fields:
         return fields
-    from dataclasses import replace
-
-    from config.field_values import format_field_value, parse_field_value
+    from config.field_values import parse_field_value
     from config.model_fields import FIELDS_BY_KEY
 
     person_scope = person if person in {"self", "wife"} else "self"
@@ -630,7 +714,7 @@ def _stack_property_tax_if_needed(
         "import" in src or "property" in src or "tax" in src or "bill" in src
     )
     if not stack:
-        return fields
+        return _tag_single_property_tax_bill(fields, field_def)
     out = []
     for item in fields:
         if getattr(item, "field_key", None) != "property_tax_annual":
@@ -643,8 +727,7 @@ def _stack_property_tax_if_needed(
         except Exception:
             out.append(item)
             continue
-        bills = _bill_components(snapshot, person_scope, existing)
-        quote = str(getattr(item, "source_quote", "") or "")
+        bills = _bills_for_total(snapshot, person_scope, existing)
         matched = None
         closest = None
         for index, bill in enumerate(bills):
@@ -660,18 +743,73 @@ def _stack_property_tax_if_needed(
         else:
             bills.append(new_val)
             note = f"summed with existing ${existing:,.0f} (multiple properties)"
-        total = sum(bills)
         out.append(
-            replace(
+            _property_tax_row(
                 item,
-                raw_value=format_field_value(field_def, total),
-                display_value=f"${total:,.0f}",
-                source_quote=(
-                    f"{quote}; {note}; bills={_bill_list(bills)}"
-                ).strip("; "),
+                field_def,
+                new_val=new_val,
+                bills=bills,
+                note=note,
+                include_list=True,
             )
         )
     return out
+
+
+def _tag_single_property_tax_bill(fields: list, field_def) -> list:
+    """Name the one bill. Do not mark it summed, so a later apply can still stack."""
+    from config.field_values import parse_field_value
+
+    out = []
+    for item in fields:
+        if getattr(item, "field_key", None) != "property_tax_annual":
+            out.append(item)
+            continue
+        try:
+            new_val = float(parse_field_value(field_def, str(getattr(item, "raw_value", "") or "0")))
+        except Exception:
+            out.append(item)
+            continue
+        if new_val <= 0:
+            out.append(item)
+            continue
+        out.append(
+            _property_tax_row(
+                item,
+                field_def,
+                new_val=new_val,
+                bills=[new_val],
+                note="",
+                include_list=False,
+            )
+        )
+    return out
+
+
+def _property_tax_row(
+    item,
+    field_def,
+    *,
+    new_val: float,
+    bills: list[float],
+    note: str,
+    include_list: bool,
+):
+    from dataclasses import replace
+
+    from config.field_values import format_field_value
+
+    quote = str(getattr(item, "source_quote", "") or "")
+    total = sum(bills)
+    parts = [quote, note, f"component={_bill_list([new_val])}"]
+    if include_list:
+        parts.append(f"bills={_bill_list(bills)}")
+    return replace(
+        item,
+        raw_value=format_field_value(field_def, total),
+        display_value=f"${total:,.0f}",
+        source_quote="; ".join(part for part in parts if part),
+    )
 
 
 def _retarget_loan_fields(item, *, slot: str, quote_note: str):
@@ -754,27 +892,50 @@ def _stack_mortgage_if_needed(
         elif matches_first or second_payment <= 0:
             action = "form_first"
         elif proposed_year > 0:
-            # A maturity that matches neither loan must not rewrite the first loan.
-            action = "form_drop_payoff"
+            # A maturity that matches neither loan must not rewrite either payoff.
+            # Interest fills an empty second figure or refreshes a close one.
+            # A different amount already stored on the second loan stays put.
+            if (
+                new_interest > 0
+                and first_interest > 0
+                and _amounts_within(first_interest, new_interest)
+            ):
+                action = "form_first_interest"
+            elif second_interest <= 0 or _amounts_within(second_interest, new_interest):
+                action = "form_drop_payoff"
+            else:
+                action = "form_skip_interest"
         elif second_interest > 0 and _amounts_within(second_interest, new_interest):
             action = "form_second"
         elif first_interest <= 0 or _amounts_within(first_interest, new_interest):
             action = "form_first"
-        else:
+        elif second_interest <= 0:
             action = "form_second"
+        else:
+            action = "form_skip_interest"
 
     out = []
     for item in fields:
         key = getattr(item, "field_key", None)
-        if key == "mortgage_annual" and document_id == "form_1098" and action != "keep":
+        if key == "mortgage_annual" and document_id == "form_1098":
             continue
         if action == "refresh_first" or action == "keep":
             out.append(item)
             continue
-        if action == "form_first":
+        if action == "form_first" or action == "form_first_interest":
+            if action == "form_first_interest" and key in {
+                "mortgage_payoff_year",
+                "mortgage_payoff_month",
+            }:
+                continue
             out.append(item)
             continue
-        if action == "form_drop_payoff" and key in {"mortgage_payoff_year", "mortgage_payoff_month"}:
+        if action in {"form_drop_payoff", "form_skip_interest"} and key in {
+            "mortgage_payoff_year",
+            "mortgage_payoff_month",
+        }:
+            continue
+        if action == "form_skip_interest" and key == "itemized_mortgage_interest":
             continue
         if action == "form_drop_payoff" and key == "itemized_mortgage_interest":
             out.append(_retarget_loan_fields(item, slot="second", quote_note="second loan interest"))
