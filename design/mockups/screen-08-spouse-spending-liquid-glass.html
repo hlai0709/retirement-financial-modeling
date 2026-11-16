@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Screen 8 — Spouse Retirement Spending · Liquid Glass</title>
+  <link rel="stylesheet" href="liquid-glass.css" />
+  <style>
+    .select-wrap::after {
+      content: "";
+      position: absolute; right: 16px; top: 50%;
+      transform: translateY(-50%);
+      border-left: 4px solid transparent;
+      border-right: 4px solid transparent;
+      border-top: 5px solid rgba(255,255,255,0.5);
+      pointer-events: none;
+    }
+    .glass-input.year { width: 108px; }
+    .caption.tight { margin-top: 10px; }
+    .caption.loose { margin-top: 28px; }
+    .dots i { width: 14px; }
+    .ai-card {
+      position: relative;
+      text-align: left;
+      padding: 24px 28px 28px 84px;
+    }
+    .ai-card p { font-size: 14px; color: var(--secondary); margin-bottom: 20px; line-height: 1.55; }
+    .ai-actions {
+      display: flex;
+      justify-content: center;
+      margin: 4px calc(-28px) 0 calc(-56px);
+    }
+    .ai-icon {
+      position: absolute;
+      top: 22px;
+      left: 22px;
+      width: 48px; height: 48px;
+      margin: 0;
+      border-radius: 14px;
+      background: linear-gradient(135deg, rgba(90,200,250,0.35), rgba(175,82,222,0.25));
+      border: 1px solid rgba(255,255,255,0.2);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 22px;
+    }
+    .btn-skip-prominent {
+      background: rgba(255,255,255,0.16) !important;
+      border-color: rgba(255,255,255,0.28) !important;
+    }
+</style>
+</head>
+<body class="screen-body">
+  <div class="banner">Screen 8 — Spouse Retirement Spending ·
+    <a href="screen-07-spending-liquid-glass.html">← Screen 7</a>
+    <a href="screen-09-healthcare-liquid-glass.html">Screen 9 →</a>
+    <a href="guided-all-screens.html">All screens</a>
+    <a href="index.html">Index</a></div>
+
+  <div class="window">
+    <header class="header liquid">
+      <div class="header-left">
+        <span class="app-name">Retirement Planner</span>
+        <div class="pill-toggle">
+          <button type="button" class="on">Guided</button>
+          <button type="button">Expert</button>
+        </div>
+      </div>
+      <span class="build">UI Jun 23 · liquid glass</span>
+    </header>
+
+    <main class="main">
+      <div class="step-row">
+        <h1 class="step-title">Spouse Retirement Spending</h1>
+        <button type="button" class="btn-help" id="help-open">Help</button>
+      </div>
+      <div class="content-glass liquid liquid-strong"><div class="glass-inner"><p class="q-label"><span>1.</span>What are your spouse's expected annual base living expenses in retirement?</p><div class="input-dollar"><span class="prefix">$</span><input type="text" value="72,000" readonly /></div></div><div class="glass-inner"><p class="q-label"><span>2.</span>Should spending stay flat or vary by age band?</p><div class="radio-row"><div class="radio-pill">Flat</div><div class="radio-pill on">Go-Go phases</div></div></div><div class="glass-inner"><p class="q-label"><span>3.</span>What share of household mortgage does your spouse cover?</p><div class="input-dollar"><span class="prefix">$</span><input type="text" value="9,000" readonly /></div></div><div class="glass-inner"><p class="q-label"><span>4.</span>Any one-time expense year for your spouse?</p><input class="glass-input narrow year" type="text" value="—" readonly /><p class="caption tight">Leave blank if none.</p></div></div>
+    </main>
+
+    <div class="chrome-dock liquid">
+      <div class="step-footer">
+        <div class="footer-left">
+          <button type="button" class="btn btn-secondary">← Back</button>
+          <button type="button" class="btn btn-secondary">Skip for now</button>
+        </div>
+        <button type="button" class="btn btn-primary">Continue →</button>
+      </div>
+      <div class="progress-strip">
+        <span>Step 8 of 16</span>
+        <div class="dots"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+        <span>Money out</span>
+      </div>
+    </div>
+    <div class="help-backdrop" id="backdrop"></div>
+    <aside class="help-panel liquid liquid-strong" id="panel">
+      <div class="help-head"><span>Help — Spouse Spending</span><button type="button" class="btn-x" id="help-close">✕</button></div>
+      <div class="help-body"><div class="help-item"><h3>1 · Base expenses</h3><p>Spouse annual living costs in retirement.</p></div><div class="help-item"><h3>2 · Spending phases</h3><p>Same Go-Go / Slow-Go / No-Go options for your spouse.</p></div><div class="help-item"><h3>3 · Mortgage share</h3><p>Spouse portion of shared housing costs, if tracked separately.</p></div><div class="help-item"><h3>4 · One-time costs</h3><p>Large planned expenses attributed to spouse.</p></div></div>
+    </aside>
+  </div>
+
+  <script>
+    const p = document.getElementById('panel'), b = document.getElementById('backdrop');
+    document.getElementById('help-open').onclick = () => { p.classList.add('open'); b.classList.add('open'); };
+    document.getElementById('help-close').onclick = () => { p.classList.remove('open'); b.classList.remove('open'); };
+    b.onclick = () => { p.classList.remove('open'); b.classList.remove('open'); };
+  </script>
+</body>
+</html>

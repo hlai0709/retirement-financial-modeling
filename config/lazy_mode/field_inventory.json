@@ -1,0 +1,1292 @@
+{
+  "field_count": 143,
+  "fields": [
+    {
+      "field_key": "life_expectancy",
+      "person": null,
+      "label": "Life Expectancy",
+      "field_type": "int",
+      "data_source": "manual",
+      "ui_group": "timeline",
+      "completeness_core": true
+    },
+    {
+      "field_key": "inflation_rate",
+      "person": null,
+      "label": "Inflation Rate %",
+      "field_type": "rate_pct",
+      "data_source": "market",
+      "ui_group": "market",
+      "completeness_core": true
+    },
+    {
+      "field_key": "investment_return_mean",
+      "person": null,
+      "label": "Investment Return Mean %",
+      "field_type": "rate_pct",
+      "data_source": "market",
+      "ui_group": "market",
+      "completeness_core": true
+    },
+    {
+      "field_key": "tsla_current_price",
+      "person": null,
+      "label": "TSLA Current Price",
+      "field_type": "money",
+      "data_source": "market",
+      "ui_group": "market",
+      "completeness_core": false
+    },
+    {
+      "field_key": "pre_retire_tax_rate",
+      "person": null,
+      "label": "Pre-Retire Tax Rate %",
+      "field_type": "rate_pct",
+      "data_source": "manual",
+      "ui_group": "tax_benefits",
+      "completeness_core": true
+    },
+    {
+      "field_key": "post_retire_tax_rate",
+      "person": null,
+      "label": "Post-Retire Tax Rate %",
+      "field_type": "rate_pct",
+      "data_source": "manual",
+      "ui_group": "tax_benefits",
+      "completeness_core": true
+    },
+    {
+      "field_key": "roth_portfolio_pct",
+      "person": null,
+      "label": "Roth Portfolio %",
+      "field_type": "rate_pct",
+      "data_source": "manual",
+      "ui_group": "assets_self",
+      "completeness_core": false
+    },
+    {
+      "field_key": "contribution_roth_pct",
+      "person": null,
+      "label": "Contribution Roth %",
+      "field_type": "rate_pct",
+      "data_source": "manual",
+      "ui_group": "income_self",
+      "completeness_core": false
+    },
+    {
+      "field_key": "ss_tax_method",
+      "person": null,
+      "label": "SS Tax Method",
+      "field_type": "text",
+      "data_source": "manual",
+      "ui_group": "tax_benefits",
+      "completeness_core": false
+    },
+    {
+      "field_key": "ss_taxable_fraction",
+      "person": null,
+      "label": "SS Taxable Fraction %",
+      "field_type": "rate_pct",
+      "data_source": "manual",
+      "ui_group": "tax_benefits",
+      "completeness_core": false
+    },
+    {
+      "field_key": "rmd_start_age",
+      "person": null,
+      "label": "RMD Start Age",
+      "field_type": "int",
+      "data_source": "manual",
+      "ui_group": "tax_benefits",
+      "completeness_core": false
+    },
+    {
+      "field_key": "use_birth_year_rmd",
+      "person": null,
+      "label": "Use Birth Year RMD",
+      "field_type": "bool",
+      "data_source": "manual",
+      "ui_group": "tax_benefits",
+      "completeness_core": false
+    },
+    {
+      "field_key": "taxable_gain_fraction",
+      "person": null,
+      "label": "Taxable Gain Fraction %",
+      "field_type": "rate_pct",
+      "data_source": "manual",
+      "ui_group": "tax_benefits",
+      "completeness_core": false
+    },
+    {
+      "field_key": "niit_enabled",
+      "person": null,
+      "label": "NIIT Enabled",
+      "field_type": "bool",
+      "data_source": "manual",
+      "ui_group": "tax_benefits",
+      "completeness_core": false
+    },
+    {
+      "field_key": "mfs_lived_apart",
+      "person": null,
+      "label": "MFS Lived Apart",
+      "field_type": "bool",
+      "data_source": "manual",
+      "ui_group": "tax_benefits",
+      "completeness_core": false
+    },
+    {
+      "field_key": "withdrawal_order",
+      "person": null,
+      "label": "Withdrawal Order",
+      "field_type": "text",
+      "data_source": "manual",
+      "ui_group": "tax_benefits",
+      "completeness_core": false
+    },
+    {
+      "field_key": "working_year_tax_enabled",
+      "person": null,
+      "label": "Working Year Tax Enabled",
+      "field_type": "bool",
+      "data_source": "manual",
+      "ui_group": "tax_benefits",
+      "completeness_core": false
+    },
+    {
+      "field_key": "roth_conversion_target_bracket",
+      "person": null,
+      "label": "Roth Conversion Target Bracket %",
+      "field_type": "rate_pct",
+      "data_source": "manual",
+      "ui_group": "tax_benefits",
+      "completeness_core": false
+    },
+    {
+      "field_key": "expense_phase_mode",
+      "person": null,
+      "label": "Expense Phase Mode",
+      "field_type": "text",
+      "data_source": "manual",
+      "ui_group": "spending_self",
+      "completeness_core": false
+    },
+    {
+      "field_key": "expense_go_go_end_age",
+      "person": null,
+      "label": "Expense Go-Go End Age",
+      "field_type": "int",
+      "data_source": "manual",
+      "ui_group": "spending_self",
+      "completeness_core": false
+    },
+    {
+      "field_key": "expense_slow_go_end_age",
+      "person": null,
+      "label": "Expense Slow-Go End Age",
+      "field_type": "int",
+      "data_source": "manual",
+      "ui_group": "spending_self",
+      "completeness_core": false
+    },
+    {
+      "field_key": "expense_go_go_pct",
+      "person": null,
+      "label": "Expense Go-Go %",
+      "field_type": "rate_pct",
+      "data_source": "manual",
+      "ui_group": "spending_self",
+      "completeness_core": false
+    },
+    {
+      "field_key": "expense_slow_go_pct",
+      "person": null,
+      "label": "Expense Slow-Go %",
+      "field_type": "rate_pct",
+      "data_source": "manual",
+      "ui_group": "spending_self",
+      "completeness_core": false
+    },
+    {
+      "field_key": "expense_no_go_pct",
+      "person": null,
+      "label": "Expense No-Go %",
+      "field_type": "rate_pct",
+      "data_source": "manual",
+      "ui_group": "spending_self",
+      "completeness_core": false
+    },
+    {
+      "field_key": "ltc_inflation_rate",
+      "person": null,
+      "label": "LTC Inflation Rate %",
+      "field_type": "rate_pct",
+      "data_source": "manual",
+      "ui_group": "healthcare_self",
+      "completeness_core": false
+    },
+    {
+      "field_key": "survivor_filing_status",
+      "person": null,
+      "label": "Survivor Filing Status",
+      "field_type": "text",
+      "data_source": "manual",
+      "ui_group": "tax_benefits",
+      "completeness_core": false
+    },
+    {
+      "field_key": "planning_precision",
+      "person": null,
+      "label": "Planning Precision",
+      "field_type": "text",
+      "data_source": "manual",
+      "ui_group": "setup",
+      "completeness_core": false
+    },
+    {
+      "field_key": "itemized_salt_annual",
+      "person": null,
+      "label": "Itemized SALT (Annual)",
+      "field_type": "money",
+      "data_source": "manual",
+      "ui_group": "tax_benefits",
+      "completeness_core": false
+    },
+    {
+      "field_key": "itemized_mortgage_interest",
+      "person": null,
+      "label": "Itemized Mortgage Interest",
+      "field_type": "money",
+      "data_source": "manual",
+      "ui_group": "tax_benefits",
+      "completeness_core": false
+    },
+    {
+      "field_key": "itemized_charitable",
+      "person": null,
+      "label": "Itemized Charitable",
+      "field_type": "money",
+      "data_source": "manual",
+      "ui_group": "tax_benefits",
+      "completeness_core": false
+    },
+    {
+      "field_key": "itemized_medical",
+      "person": null,
+      "label": "Itemized Medical (OOP)",
+      "field_type": "money",
+      "data_source": "manual",
+      "ui_group": "tax_benefits",
+      "completeness_core": false
+    },
+    {
+      "field_key": "tax_calculation",
+      "person": null,
+      "label": "Tax Calculation",
+      "field_type": "text",
+      "data_source": "manual",
+      "ui_group": "tax_benefits",
+      "completeness_core": false
+    },
+    {
+      "field_key": "marriage_year",
+      "person": null,
+      "label": "Marriage Year",
+      "field_type": "year",
+      "data_source": "manual",
+      "ui_group": "timeline",
+      "completeness_core": true
+    },
+    {
+      "field_key": "filing_status_before_marriage",
+      "person": null,
+      "label": "Filing Status Before Marriage",
+      "field_type": "text",
+      "data_source": "manual",
+      "ui_group": "tax_benefits",
+      "completeness_core": false
+    },
+    {
+      "field_key": "filing_status_after_marriage",
+      "person": null,
+      "label": "Filing Status After Marriage",
+      "field_type": "text",
+      "data_source": "manual",
+      "ui_group": "tax_benefits",
+      "completeness_core": false
+    },
+    {
+      "field_key": "filing_status",
+      "person": null,
+      "label": "Filing Status (Legacy)",
+      "field_type": "text",
+      "data_source": "manual",
+      "ui_group": "tax_benefits",
+      "completeness_core": false
+    },
+    {
+      "field_key": "state_of_residence",
+      "person": null,
+      "label": "State of Residence",
+      "field_type": "text",
+      "data_source": "manual",
+      "ui_group": "setup",
+      "completeness_core": true
+    },
+    {
+      "field_key": "state_move_year",
+      "person": null,
+      "label": "State Move Year",
+      "field_type": "year",
+      "data_source": "manual",
+      "ui_group": "tax_benefits",
+      "completeness_core": false
+    },
+    {
+      "field_key": "state_after_move",
+      "person": null,
+      "label": "State After Move",
+      "field_type": "text",
+      "data_source": "manual",
+      "ui_group": "tax_benefits",
+      "completeness_core": false
+    },
+    {
+      "field_key": "state_tax_enabled",
+      "person": null,
+      "label": "State Tax Enabled",
+      "field_type": "bool",
+      "data_source": "manual",
+      "ui_group": "tax_benefits",
+      "completeness_core": false
+    },
+    {
+      "field_key": "state_tax_override_pct",
+      "person": null,
+      "label": "State Tax Override %",
+      "field_type": "rate_pct",
+      "data_source": "manual",
+      "ui_group": "tax_benefits",
+      "completeness_core": false
+    },
+    {
+      "field_key": "medicare_enabled",
+      "person": null,
+      "label": "Medicare Enabled",
+      "field_type": "bool",
+      "data_source": "manual",
+      "ui_group": "healthcare_self",
+      "completeness_core": false
+    },
+    {
+      "field_key": "medicare_start_age",
+      "person": null,
+      "label": "Medicare Start Age",
+      "field_type": "int",
+      "data_source": "manual",
+      "ui_group": "healthcare_self",
+      "completeness_core": false
+    },
+    {
+      "field_key": "medicare_part_b_monthly",
+      "person": null,
+      "label": "Medicare Part B Monthly",
+      "field_type": "money",
+      "data_source": "manual",
+      "ui_group": "healthcare_self",
+      "completeness_core": false
+    },
+    {
+      "field_key": "medicare_part_d_monthly",
+      "person": null,
+      "label": "Medicare Part D Monthly",
+      "field_type": "money",
+      "data_source": "manual",
+      "ui_group": "healthcare_self",
+      "completeness_core": false
+    },
+    {
+      "field_key": "medicare_irmaa_lookback_years",
+      "person": null,
+      "label": "Medicare IRMAA Lookback Years",
+      "field_type": "int",
+      "data_source": "manual",
+      "ui_group": "healthcare_self",
+      "completeness_core": false
+    },
+    {
+      "field_key": "aca_premium_mode",
+      "person": null,
+      "label": "ACA Premium Mode",
+      "field_type": "text",
+      "data_source": "manual",
+      "ui_group": "healthcare_self",
+      "completeness_core": false
+    },
+    {
+      "field_key": "aca_benchmark_monthly_age_21",
+      "person": null,
+      "label": "ACA Benchmark Monthly Age 21",
+      "field_type": "money",
+      "data_source": "manual",
+      "ui_group": "healthcare_self",
+      "completeness_core": false
+    },
+    {
+      "field_key": "aca_slcsp_monthly_age_21",
+      "person": null,
+      "label": "ACA SLCSP Monthly Age 21",
+      "field_type": "money",
+      "data_source": "manual",
+      "ui_group": "healthcare_self",
+      "completeness_core": false
+    },
+    {
+      "field_key": "aca_selected_plan_monthly_age_21",
+      "person": null,
+      "label": "ACA Selected Plan Monthly Age 21",
+      "field_type": "money",
+      "data_source": "manual",
+      "ui_group": "healthcare_self",
+      "completeness_core": false
+    },
+    {
+      "field_key": "tsla_target_price",
+      "person": null,
+      "label": "TSLA Target Price",
+      "field_type": "money",
+      "data_source": "manual",
+      "ui_group": "scenarios",
+      "completeness_core": false
+    },
+    {
+      "field_key": "tsla_target_year",
+      "person": null,
+      "label": "TSLA Target Year",
+      "field_type": "year",
+      "data_source": "manual",
+      "ui_group": "scenarios",
+      "completeness_core": false
+    },
+    {
+      "field_key": "doomsday_drop_year",
+      "person": null,
+      "label": "Doomsday Drop Year",
+      "field_type": "year",
+      "data_source": "manual",
+      "ui_group": "scenarios",
+      "completeness_core": false
+    },
+    {
+      "field_key": "doomsday_drop_pct",
+      "person": null,
+      "label": "Doomsday Drop Pct %",
+      "field_type": "rate_pct",
+      "data_source": "manual",
+      "ui_group": "scenarios",
+      "completeness_core": false
+    },
+    {
+      "field_key": "rebalance_to_sp500",
+      "person": null,
+      "label": "Rebalance to SP500",
+      "field_type": "bool",
+      "data_source": "manual",
+      "ui_group": "scenarios",
+      "completeness_core": false
+    },
+    {
+      "field_key": "current_age",
+      "person": "self",
+      "label": "Current Age",
+      "field_type": "age",
+      "data_source": "manual",
+      "ui_group": "timeline",
+      "completeness_core": true
+    },
+    {
+      "field_key": "current_age",
+      "person": "wife",
+      "label": "Current Age",
+      "field_type": "age",
+      "data_source": "manual",
+      "ui_group": "timeline",
+      "completeness_core": false
+    },
+    {
+      "field_key": "birth_year",
+      "person": "self",
+      "label": "Birth Year",
+      "field_type": "year",
+      "data_source": "manual",
+      "ui_group": "timeline",
+      "completeness_core": true
+    },
+    {
+      "field_key": "birth_year",
+      "person": "wife",
+      "label": "Birth Year",
+      "field_type": "year",
+      "data_source": "manual",
+      "ui_group": "timeline",
+      "completeness_core": false
+    },
+    {
+      "field_key": "retirement_age",
+      "person": "self",
+      "label": "Retirement Age",
+      "field_type": "age",
+      "data_source": "manual",
+      "ui_group": "income_self",
+      "completeness_core": true
+    },
+    {
+      "field_key": "retirement_age",
+      "person": "wife",
+      "label": "Retirement Age",
+      "field_type": "age",
+      "data_source": "manual",
+      "ui_group": "income_wife",
+      "completeness_core": false
+    },
+    {
+      "field_key": "initial_assets",
+      "person": "self",
+      "label": "Initial Assets",
+      "field_type": "money",
+      "data_source": "plaid",
+      "ui_group": "assets_self",
+      "completeness_core": true
+    },
+    {
+      "field_key": "initial_assets",
+      "person": "wife",
+      "label": "Initial Assets",
+      "field_type": "money",
+      "data_source": "plaid",
+      "ui_group": "assets_wife",
+      "completeness_core": false
+    },
+    {
+      "field_key": "initial_taxable_assets",
+      "person": "self",
+      "label": "Initial Taxable Assets",
+      "field_type": "money",
+      "data_source": "manual",
+      "ui_group": "assets_self",
+      "completeness_core": false
+    },
+    {
+      "field_key": "initial_taxable_assets",
+      "person": "wife",
+      "label": "Initial Taxable Assets",
+      "field_type": "money",
+      "data_source": "manual",
+      "ui_group": "assets_wife",
+      "completeness_core": false
+    },
+    {
+      "field_key": "initial_traditional_ira",
+      "person": "self",
+      "label": "Initial Traditional IRA",
+      "field_type": "money",
+      "data_source": "manual",
+      "ui_group": "assets_self",
+      "completeness_core": false
+    },
+    {
+      "field_key": "initial_traditional_ira",
+      "person": "wife",
+      "label": "Initial Traditional IRA",
+      "field_type": "money",
+      "data_source": "manual",
+      "ui_group": "assets_wife",
+      "completeness_core": false
+    },
+    {
+      "field_key": "initial_roth_ira",
+      "person": "self",
+      "label": "Initial Roth IRA",
+      "field_type": "money",
+      "data_source": "manual",
+      "ui_group": "assets_self",
+      "completeness_core": false
+    },
+    {
+      "field_key": "initial_roth_ira",
+      "person": "wife",
+      "label": "Initial Roth IRA",
+      "field_type": "money",
+      "data_source": "manual",
+      "ui_group": "assets_wife",
+      "completeness_core": false
+    },
+    {
+      "field_key": "annual_contributions",
+      "person": "self",
+      "label": "Annual Contributions",
+      "field_type": "money",
+      "data_source": "manual",
+      "ui_group": "income_self",
+      "completeness_core": false
+    },
+    {
+      "field_key": "annual_contributions",
+      "person": "wife",
+      "label": "Annual Contributions",
+      "field_type": "money",
+      "data_source": "manual",
+      "ui_group": "income_wife",
+      "completeness_core": false
+    },
+    {
+      "field_key": "annual_earned_income",
+      "person": "self",
+      "label": "Annual Earned Income",
+      "field_type": "money",
+      "data_source": "manual",
+      "ui_group": "income_self",
+      "completeness_core": true
+    },
+    {
+      "field_key": "annual_earned_income",
+      "person": "wife",
+      "label": "Annual Earned Income",
+      "field_type": "money",
+      "data_source": "manual",
+      "ui_group": "income_wife",
+      "completeness_core": false
+    },
+    {
+      "field_key": "qcd_annual",
+      "person": "self",
+      "label": "QCD Annual",
+      "field_type": "money",
+      "data_source": "manual",
+      "ui_group": "tax_benefits",
+      "completeness_core": false
+    },
+    {
+      "field_key": "qcd_annual",
+      "person": "wife",
+      "label": "QCD Annual",
+      "field_type": "money",
+      "data_source": "manual",
+      "ui_group": "tax_benefits",
+      "completeness_core": false
+    },
+    {
+      "field_key": "employer_health_mode",
+      "person": "self",
+      "label": "Employer Health Mode",
+      "field_type": "text",
+      "data_source": "manual",
+      "ui_group": "healthcare_self",
+      "completeness_core": false
+    },
+    {
+      "field_key": "employer_health_mode",
+      "person": "wife",
+      "label": "Employer Health Mode",
+      "field_type": "text",
+      "data_source": "manual",
+      "ui_group": "healthcare_wife",
+      "completeness_core": false
+    },
+    {
+      "field_key": "employer_health_monthly",
+      "person": "self",
+      "label": "Employer Health Monthly",
+      "field_type": "money",
+      "data_source": "manual",
+      "ui_group": "healthcare_self",
+      "completeness_core": false
+    },
+    {
+      "field_key": "employer_health_monthly",
+      "person": "wife",
+      "label": "Employer Health Monthly",
+      "field_type": "money",
+      "data_source": "manual",
+      "ui_group": "healthcare_wife",
+      "completeness_core": false
+    },
+    {
+      "field_key": "cobra_months",
+      "person": "self",
+      "label": "COBRA Months",
+      "field_type": "int",
+      "data_source": "manual",
+      "ui_group": "healthcare_self",
+      "completeness_core": false
+    },
+    {
+      "field_key": "cobra_months",
+      "person": "wife",
+      "label": "COBRA Months",
+      "field_type": "int",
+      "data_source": "manual",
+      "ui_group": "healthcare_wife",
+      "completeness_core": false
+    },
+    {
+      "field_key": "medigap_plan",
+      "person": "self",
+      "label": "Medigap Plan",
+      "field_type": "text",
+      "data_source": "manual",
+      "ui_group": "healthcare_self",
+      "completeness_core": false
+    },
+    {
+      "field_key": "medigap_plan",
+      "person": "wife",
+      "label": "Medigap Plan",
+      "field_type": "text",
+      "data_source": "manual",
+      "ui_group": "healthcare_wife",
+      "completeness_core": false
+    },
+    {
+      "field_key": "medigap_monthly",
+      "person": "self",
+      "label": "Medigap Monthly",
+      "field_type": "money",
+      "data_source": "manual",
+      "ui_group": "healthcare_self",
+      "completeness_core": false
+    },
+    {
+      "field_key": "medigap_monthly",
+      "person": "wife",
+      "label": "Medigap Monthly",
+      "field_type": "money",
+      "data_source": "manual",
+      "ui_group": "healthcare_wife",
+      "completeness_core": false
+    },
+    {
+      "field_key": "filing_status_before_marriage",
+      "person": "self",
+      "label": "Filing Status Before Marriage",
+      "field_type": "text",
+      "data_source": "manual",
+      "ui_group": "tax_benefits",
+      "completeness_core": false
+    },
+    {
+      "field_key": "filing_status_before_marriage",
+      "person": "wife",
+      "label": "Filing Status Before Marriage",
+      "field_type": "text",
+      "data_source": "manual",
+      "ui_group": "tax_benefits",
+      "completeness_core": false
+    },
+    {
+      "field_key": "asset_share_pct",
+      "person": "self",
+      "label": "Asset Share %",
+      "field_type": "rate_pct",
+      "data_source": "manual",
+      "ui_group": "assets_self",
+      "completeness_core": false
+    },
+    {
+      "field_key": "asset_share_pct",
+      "person": "wife",
+      "label": "Asset Share %",
+      "field_type": "rate_pct",
+      "data_source": "manual",
+      "ui_group": "assets_wife",
+      "completeness_core": false
+    },
+    {
+      "field_key": "base_expenses",
+      "person": "self",
+      "label": "Base Expenses",
+      "field_type": "money",
+      "data_source": "plaid",
+      "ui_group": "spending_self",
+      "completeness_core": true
+    },
+    {
+      "field_key": "base_expenses",
+      "person": "wife",
+      "label": "Base Expenses",
+      "field_type": "money",
+      "data_source": "plaid",
+      "ui_group": "spending_wife",
+      "completeness_core": false
+    },
+    {
+      "field_key": "health_insurance_pre_medicare",
+      "person": "self",
+      "label": "Health Insurance Pre-Medicare",
+      "field_type": "money",
+      "data_source": "manual",
+      "ui_group": "healthcare_self",
+      "completeness_core": true
+    },
+    {
+      "field_key": "health_insurance_pre_medicare",
+      "person": "wife",
+      "label": "Health Insurance Pre-Medicare",
+      "field_type": "money",
+      "data_source": "manual",
+      "ui_group": "healthcare_wife",
+      "completeness_core": false
+    },
+    {
+      "field_key": "health_insurance_post_retire",
+      "person": "self",
+      "label": "Health Insurance Post-Medicare",
+      "field_type": "money",
+      "data_source": "manual",
+      "ui_group": "healthcare_self",
+      "completeness_core": false
+    },
+    {
+      "field_key": "health_insurance_post_retire",
+      "person": "wife",
+      "label": "Health Insurance Post-Medicare",
+      "field_type": "money",
+      "data_source": "manual",
+      "ui_group": "healthcare_wife",
+      "completeness_core": false
+    },
+    {
+      "field_key": "life_expectancy",
+      "person": "self",
+      "label": "Life Expectancy",
+      "field_type": "int",
+      "data_source": "manual",
+      "ui_group": "timeline",
+      "completeness_core": false
+    },
+    {
+      "field_key": "life_expectancy",
+      "person": "wife",
+      "label": "Life Expectancy",
+      "field_type": "int",
+      "data_source": "manual",
+      "ui_group": "timeline",
+      "completeness_core": false
+    },
+    {
+      "field_key": "long_term_care_annual",
+      "person": "self",
+      "label": "Long-Term Care Annual",
+      "field_type": "money",
+      "data_source": "manual",
+      "ui_group": "spending_self",
+      "completeness_core": false
+    },
+    {
+      "field_key": "long_term_care_annual",
+      "person": "wife",
+      "label": "Long-Term Care Annual",
+      "field_type": "money",
+      "data_source": "manual",
+      "ui_group": "spending_wife",
+      "completeness_core": false
+    },
+    {
+      "field_key": "ltc_mode",
+      "person": "self",
+      "label": "LTC Mode",
+      "field_type": "text",
+      "data_source": "manual",
+      "ui_group": "healthcare_self",
+      "completeness_core": false
+    },
+    {
+      "field_key": "ltc_mode",
+      "person": "wife",
+      "label": "LTC Mode",
+      "field_type": "text",
+      "data_source": "manual",
+      "ui_group": "healthcare_wife",
+      "completeness_core": false
+    },
+    {
+      "field_key": "ltc_start_age",
+      "person": "self",
+      "label": "LTC Start Age",
+      "field_type": "age",
+      "data_source": "manual",
+      "ui_group": "healthcare_self",
+      "completeness_core": false
+    },
+    {
+      "field_key": "ltc_start_age",
+      "person": "wife",
+      "label": "LTC Start Age",
+      "field_type": "age",
+      "data_source": "manual",
+      "ui_group": "healthcare_wife",
+      "completeness_core": false
+    },
+    {
+      "field_key": "ltc_duration_years",
+      "person": "self",
+      "label": "LTC Duration Years",
+      "field_type": "int",
+      "data_source": "manual",
+      "ui_group": "healthcare_self",
+      "completeness_core": false
+    },
+    {
+      "field_key": "ltc_duration_years",
+      "person": "wife",
+      "label": "LTC Duration Years",
+      "field_type": "int",
+      "data_source": "manual",
+      "ui_group": "healthcare_wife",
+      "completeness_core": false
+    },
+    {
+      "field_key": "ltc_care_setting",
+      "person": "self",
+      "label": "LTC Care Setting",
+      "field_type": "text",
+      "data_source": "manual",
+      "ui_group": "healthcare_self",
+      "completeness_core": false
+    },
+    {
+      "field_key": "ltc_care_setting",
+      "person": "wife",
+      "label": "LTC Care Setting",
+      "field_type": "text",
+      "data_source": "manual",
+      "ui_group": "healthcare_wife",
+      "completeness_core": false
+    },
+    {
+      "field_key": "mortgage_annual",
+      "person": "self",
+      "label": "Mortgage Annual",
+      "field_type": "money",
+      "data_source": "manual",
+      "ui_group": "spending_self",
+      "completeness_core": false
+    },
+    {
+      "field_key": "mortgage_annual",
+      "person": "wife",
+      "label": "Mortgage Annual",
+      "field_type": "money",
+      "data_source": "manual",
+      "ui_group": "spending_wife",
+      "completeness_core": false
+    },
+    {
+      "field_key": "mortgage_payoff_year",
+      "person": "self",
+      "label": "Mortgage Payoff Year",
+      "field_type": "year",
+      "data_source": "manual",
+      "ui_group": "spending_self",
+      "completeness_core": false
+    },
+    {
+      "field_key": "mortgage_payoff_year",
+      "person": "wife",
+      "label": "Mortgage Payoff Year",
+      "field_type": "year",
+      "data_source": "manual",
+      "ui_group": "spending_wife",
+      "completeness_core": false
+    },
+    {
+      "field_key": "one_time_expense_year",
+      "person": "self",
+      "label": "One-Time Expense Year",
+      "field_type": "year",
+      "data_source": "manual",
+      "ui_group": "spending_self",
+      "completeness_core": false
+    },
+    {
+      "field_key": "one_time_expense_year",
+      "person": "wife",
+      "label": "One-Time Expense Year",
+      "field_type": "year",
+      "data_source": "manual",
+      "ui_group": "spending_wife",
+      "completeness_core": false
+    },
+    {
+      "field_key": "one_time_expense_amount",
+      "person": "self",
+      "label": "One-Time Expense Amount",
+      "field_type": "money",
+      "data_source": "manual",
+      "ui_group": "spending_self",
+      "completeness_core": false
+    },
+    {
+      "field_key": "one_time_expense_amount",
+      "person": "wife",
+      "label": "One-Time Expense Amount",
+      "field_type": "money",
+      "data_source": "manual",
+      "ui_group": "spending_wife",
+      "completeness_core": false
+    },
+    {
+      "field_key": "rental_income_start",
+      "person": "self",
+      "label": "Rental Income Start",
+      "field_type": "money",
+      "data_source": "manual",
+      "ui_group": "income_self",
+      "completeness_core": false
+    },
+    {
+      "field_key": "rental_income_start",
+      "person": "wife",
+      "label": "Rental Income Start",
+      "field_type": "money",
+      "data_source": "manual",
+      "ui_group": "income_wife",
+      "completeness_core": false
+    },
+    {
+      "field_key": "rental_growth_rate",
+      "person": "self",
+      "label": "Rental Growth Rate %",
+      "field_type": "rate_pct",
+      "data_source": "manual",
+      "ui_group": "income_self",
+      "completeness_core": false
+    },
+    {
+      "field_key": "rental_growth_rate",
+      "person": "wife",
+      "label": "Rental Growth Rate %",
+      "field_type": "rate_pct",
+      "data_source": "manual",
+      "ui_group": "income_wife",
+      "completeness_core": false
+    },
+    {
+      "field_key": "pension_start_age",
+      "person": "self",
+      "label": "Pension Start Age",
+      "field_type": "age",
+      "data_source": "manual",
+      "ui_group": "tax_benefits",
+      "completeness_core": false
+    },
+    {
+      "field_key": "pension_start_age",
+      "person": "wife",
+      "label": "Pension Start Age",
+      "field_type": "age",
+      "data_source": "manual",
+      "ui_group": "tax_benefits",
+      "completeness_core": false
+    },
+    {
+      "field_key": "pension_amount",
+      "person": "self",
+      "label": "Pension Amount",
+      "field_type": "money",
+      "data_source": "manual",
+      "ui_group": "tax_benefits",
+      "completeness_core": false
+    },
+    {
+      "field_key": "pension_amount",
+      "person": "wife",
+      "label": "Pension Amount",
+      "field_type": "money",
+      "data_source": "manual",
+      "ui_group": "tax_benefits",
+      "completeness_core": false
+    },
+    {
+      "field_key": "ss_start_age",
+      "person": "self",
+      "label": "SS Start Age",
+      "field_type": "age",
+      "data_source": "manual",
+      "ui_group": "tax_benefits",
+      "completeness_core": true
+    },
+    {
+      "field_key": "ss_start_age",
+      "person": "wife",
+      "label": "SS Start Age",
+      "field_type": "age",
+      "data_source": "manual",
+      "ui_group": "tax_benefits",
+      "completeness_core": false
+    },
+    {
+      "field_key": "ss_benefit_mode",
+      "person": "self",
+      "label": "SS Benefit Mode",
+      "field_type": "text",
+      "data_source": "manual",
+      "ui_group": "tax_benefits",
+      "completeness_core": false
+    },
+    {
+      "field_key": "ss_benefit_mode",
+      "person": "wife",
+      "label": "SS Benefit Mode",
+      "field_type": "text",
+      "data_source": "manual",
+      "ui_group": "tax_benefits",
+      "completeness_core": false
+    },
+    {
+      "field_key": "ss_amount",
+      "person": "self",
+      "label": "SS Amount",
+      "field_type": "money",
+      "data_source": "manual",
+      "ui_group": "tax_benefits",
+      "completeness_core": true
+    },
+    {
+      "field_key": "ss_amount",
+      "person": "wife",
+      "label": "SS Amount",
+      "field_type": "money",
+      "data_source": "manual",
+      "ui_group": "tax_benefits",
+      "completeness_core": false
+    },
+    {
+      "field_key": "ss_pia_monthly",
+      "person": "self",
+      "label": "SS PIA Monthly",
+      "field_type": "money",
+      "data_source": "manual",
+      "ui_group": "tax_benefits",
+      "completeness_core": false
+    },
+    {
+      "field_key": "ss_pia_monthly",
+      "person": "wife",
+      "label": "SS PIA Monthly",
+      "field_type": "money",
+      "data_source": "manual",
+      "ui_group": "tax_benefits",
+      "completeness_core": false
+    },
+    {
+      "field_key": "ss_aime",
+      "person": "self",
+      "label": "SS AIME",
+      "field_type": "money",
+      "data_source": "manual",
+      "ui_group": "tax_benefits",
+      "completeness_core": false
+    },
+    {
+      "field_key": "ss_aime",
+      "person": "wife",
+      "label": "SS AIME",
+      "field_type": "money",
+      "data_source": "manual",
+      "ui_group": "tax_benefits",
+      "completeness_core": false
+    },
+    {
+      "field_key": "ss_career_avg_earnings",
+      "person": "self",
+      "label": "SS Career Avg Earnings",
+      "field_type": "money",
+      "data_source": "manual",
+      "ui_group": "tax_benefits",
+      "completeness_core": false
+    },
+    {
+      "field_key": "ss_career_avg_earnings",
+      "person": "wife",
+      "label": "SS Career Avg Earnings",
+      "field_type": "money",
+      "data_source": "manual",
+      "ui_group": "tax_benefits",
+      "completeness_core": false
+    },
+    {
+      "field_key": "roth_conversion_mode",
+      "person": "self",
+      "label": "Roth Conversion Mode",
+      "field_type": "text",
+      "data_source": "manual",
+      "ui_group": "tax_benefits",
+      "completeness_core": false
+    },
+    {
+      "field_key": "roth_conversion_mode",
+      "person": "wife",
+      "label": "Roth Conversion Mode",
+      "field_type": "text",
+      "data_source": "manual",
+      "ui_group": "tax_benefits",
+      "completeness_core": false
+    },
+    {
+      "field_key": "roth_conversion_annual",
+      "person": "self",
+      "label": "Roth Conversion Annual",
+      "field_type": "money",
+      "data_source": "manual",
+      "ui_group": "tax_benefits",
+      "completeness_core": false
+    },
+    {
+      "field_key": "roth_conversion_annual",
+      "person": "wife",
+      "label": "Roth Conversion Annual",
+      "field_type": "money",
+      "data_source": "manual",
+      "ui_group": "tax_benefits",
+      "completeness_core": false
+    },
+    {
+      "field_key": "roth_conversion_start_age",
+      "person": "self",
+      "label": "Roth Conversion Start Age",
+      "field_type": "age",
+      "data_source": "manual",
+      "ui_group": "tax_benefits",
+      "completeness_core": false
+    },
+    {
+      "field_key": "roth_conversion_start_age",
+      "person": "wife",
+      "label": "Roth Conversion Start Age",
+      "field_type": "age",
+      "data_source": "manual",
+      "ui_group": "tax_benefits",
+      "completeness_core": false
+    },
+    {
+      "field_key": "roth_conversion_end_age",
+      "person": "self",
+      "label": "Roth Conversion End Age",
+      "field_type": "age",
+      "data_source": "manual",
+      "ui_group": "tax_benefits",
+      "completeness_core": false
+    },
+    {
+      "field_key": "roth_conversion_end_age",
+      "person": "wife",
+      "label": "Roth Conversion End Age",
+      "field_type": "age",
+      "data_source": "manual",
+      "ui_group": "tax_benefits",
+      "completeness_core": false
+    }
+  ]
+}

@@ -1,0 +1,12 @@
+{
+  "parser_id": "ssa_1099",
+  "config_version": "2024_v1",
+  "description": "SSA-1099 and my Social Security statement mapping",
+  "field_map": {
+    "ss_benefit_mode": "set_to_pia_when_chart_present",
+    "ss_amount": "annual_benefits_or_monthly_chart_x12",
+    "ss_pia_monthly": "pia_or_fra_monthly_from_chart",
+    "ss_start_age": "full_retirement_age"
+  },
+  "notes": "my Social Security Personalized Monthly Retirement Benefit Estimates chart (ages 62–70): FRA monthly → ss_pia_monthly; ×12 → ss_amount; mode → pia. SSA-1099 box 5 / Benefits Paid for annual benefits already in pay."
+}

@@ -1,0 +1,35 @@
+{
+  "institutions": [
+    {
+      "item_id": "plaid_item_example",
+      "institution_name": "Bank A",
+      "connected_at": "2026-06-20T12:00:00+00:00"
+    }
+  ],
+  "account_mappings": [
+    {
+      "account_id": "plaid_account_checking",
+      "institution": "Bank A",
+      "name": "Checking Account",
+      "owner": "self",
+      "include_in_assets": true,
+      "item_id": "plaid_item_example"
+    },
+    {
+      "account_id": "plaid_account_brokerage",
+      "institution": "Brokerage B",
+      "name": "Brokerage Account",
+      "owner": "self",
+      "include_in_assets": true,
+      "item_id": "plaid_item_example"
+    },
+    {
+      "account_id": "plaid_account_savings",
+      "institution": "Bank C",
+      "name": "Savings Account",
+      "owner": "wife",
+      "include_in_assets": true,
+      "item_id": "plaid_item_example"
+    }
+  ]
+}

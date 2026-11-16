@@ -1,0 +1,200 @@
+"""CPA-precision federal tax: itemized vs standard deduction and AMT."""
+
+from __future__ import annotations
+
+from dataclasses import dataclass
+
+from config.policy.tables import (
+    AMT_EXEMPTION_PHASEOUT_RATE,
+    AMT_RATE_HIGH,
+    AMT_RATE_LOW,
+    MEDICAL_AGI_FLOOR_PCT,
+    SALT_DEDUCTION_CAP_2024,
+    amt_constants_for_projection,
+)
+from model.taxes import (
+    TaxTable,
+    additional_standard_deduction_65,
+    federal_income_tax,
+    federal_ltcg_tax,
+    normalize_filing_status,
+)
+
+VALID_PLANNING_PRECISION = frozenset({"standard", "cpa"})
+
+
+@dataclass(frozen=True)
+class ItemizedInputs:
+    salt: float = 0.0
+    mortgage_interest: float = 0.0
+    charitable: float = 0.0
+    medical: float = 0.0
+
+
+@dataclass(frozen=True)
+class CpaFederalTaxResult:
+    total_federal: float
+    ordinary_tax: float
+    ltcg_tax: float
+    amt_surcharge: float
+    deduction_used: float
+    deduction_method: str
+
+
+def normalize_planning_precision(value: object) -> str:
+    mode = str(value or "standard").strip().lower()
+    return mode if mode in VALID_PLANNING_PRECISION else "standard"
+
+
+def itemized_inputs_from_params(params: dict) -> ItemizedInputs:
+    return ItemizedInputs(
+        salt=float(params.get("itemized_salt_annual", 0) or 0),
+        mortgage_interest=float(params.get("itemized_mortgage_interest", 0) or 0),
+        charitable=float(params.get("itemized_charitable", 0) or 0),
+        medical=float(params.get("itemized_medical", 0) or 0),
+    )
+
+
+def compute_itemized_deduction(
+    inputs: ItemizedInputs,
+    *,
+    agi: float,
+) -> tuple[float, float]:
+    """Return (total itemized deduction, SALT amount included after cap)."""
+    salt = min(max(0.0, inputs.salt), SALT_DEDUCTION_CAP_2024)
+    mortgage = max(0.0, inputs.mortgage_interest)
+    charitable = max(0.0, inputs.charitable)
+    medical = max(0.0, inputs.medical - agi * MEDICAL_AGI_FLOOR_PCT)
+    return salt + mortgage + charitable + medical, salt
+
+
+def _amt_exemption_and_phaseout(
+    filing_status: str,
+    *,
+    inflation_factor: float,
+) -> tuple[float, float, float]:
+    status = normalize_filing_status(filing_status)
+    amt = amt_constants_for_projection(inflation_factor=inflation_factor)
+    if status == "mfj":
+        return (
+            amt["exemption_mfj"],
+            amt["phaseout_start_mfj"],
+            amt["bracket_26_mfj"],
+        )
+    if status == "mfs":
+        return (
+            amt["exemption_mfs"],
+            amt["phaseout_start_mfs"],
+            amt["bracket_26_mfs"],
+        )
+    return (
+        amt["exemption_single"],
+        amt["phaseout_start_single"],
+        amt["bracket_26_single"],
+    )
+
+
+def compute_amti(
+    *,
+    ordinary_income: float,
+    ltcg: float,
+    salt_deducted: float,
+    deduction_method: str,
+) -> float:
+    """Simplified AMTI with SALT add-back when itemizing."""
+    amti = max(0.0, ordinary_income) + max(0.0, ltcg)
+    if deduction_method == "itemized" and salt_deducted > 0:
+        amti += salt_deducted
+    return amti
+
+
+def compute_amt_liability(
+    amti: float,
+    *,
+    filing_status: str,
+    inflation_factor: float = 1.0,
+) -> float:
+    exemption, phaseout_start, bracket_26 = _amt_exemption_and_phaseout(
+        filing_status,
+        inflation_factor=inflation_factor,
+    )
+    if amti > phaseout_start:
+        exemption = max(0.0, exemption - AMT_EXEMPTION_PHASEOUT_RATE * (amti - phaseout_start))
+    amt_taxable = max(0.0, amti - exemption)
+    if amt_taxable <= 0:
+        return 0.0
+    low_band = min(amt_taxable, bracket_26)
+    high_band = max(0.0, amt_taxable - bracket_26)
+    return low_band * AMT_RATE_LOW + high_band * AMT_RATE_HIGH
+
+
+def federal_tax_cpa_precision(
+    *,
+    ordinary_income: float,
+    ltcg: float,
+    table: TaxTable,
+    filing_status: str,
+    seniors_65_count: int = 0,
+    inflation_factor: float = 1.0,
+    itemized: ItemizedInputs,
+    agi: float,
+) -> CpaFederalTaxResult:
+    """Federal tax with optimal deduction and AMT (max of regular vs AMT)."""
+    extra_sd = additional_standard_deduction_65(
+        filing_status,
+        seniors_65_count=seniors_65_count,
+        inflation_factor=inflation_factor,
+    )
+    standard_deduction = table.standard_deduction + extra_sd
+    itemized_deduction, salt_used = compute_itemized_deduction(itemized, agi=agi)
+
+    if itemized_deduction > standard_deduction:
+        deduction = itemized_deduction
+        method = "itemized"
+    else:
+        deduction = standard_deduction
+        method = "standard"
+        salt_used = 0.0
+
+    ordinary_taxable = max(0.0, ordinary_income - deduction)
+    if ltcg <= 0:
+        ord_tax = federal_income_tax(ordinary_taxable, table)
+        ltcg_tax = 0.0
+    elif ordinary_taxable <= 0:
+        ord_tax = 0.0
+        ltcg_tax = federal_ltcg_tax(
+            ltcg,
+            ordinary_taxable_income=0.0,
+            ltcg_tiers=table.ltcg_tiers,
+        )
+    else:
+        ord_tax = federal_income_tax(ordinary_taxable, table)
+        ltcg_tax = federal_ltcg_tax(
+            ltcg,
+            ordinary_taxable_income=ordinary_taxable,
+            ltcg_tiers=table.ltcg_tiers,
+        )
+
+    regular_federal = ord_tax + ltcg_tax
+    amti = compute_amti(
+        ordinary_income=ordinary_income,
+        ltcg=ltcg,
+        salt_deducted=salt_used,
+        deduction_method=method,
+    )
+    amt_liability = compute_amt_liability(
+        amti,
+        filing_status=filing_status,
+        inflation_factor=inflation_factor,
+    )
+    total_federal = max(regular_federal, amt_liability)
+    amt_surcharge = max(0.0, total_federal - regular_federal)
+
+    return CpaFederalTaxResult(
+        total_federal=total_federal,
+        ordinary_tax=ord_tax,
+        ltcg_tax=ltcg_tax,
+        amt_surcharge=amt_surcharge,
+        deduction_used=deduction,
+        deduction_method=method,
+    )

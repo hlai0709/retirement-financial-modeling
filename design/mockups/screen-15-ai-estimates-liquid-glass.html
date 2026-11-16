@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Screen 15 — AI Estimates · Liquid Glass</title>
+  <link rel="stylesheet" href="liquid-glass.css" />
+  <style>
+    .select-wrap::after {
+      content: "";
+      position: absolute; right: 16px; top: 50%;
+      transform: translateY(-50%);
+      border-left: 4px solid transparent;
+      border-right: 4px solid transparent;
+      border-top: 5px solid rgba(255,255,255,0.5);
+      pointer-events: none;
+    }
+    .glass-input.year { width: 108px; }
+    .caption.tight { margin-top: 10px; }
+    .caption.loose { margin-top: 28px; }
+    .dots i { width: 14px; }
+    .ai-card {
+      position: relative;
+      text-align: left;
+      padding: 24px 28px 28px 84px;
+    }
+    .ai-card p { font-size: 14px; color: var(--secondary); margin-bottom: 20px; line-height: 1.55; }
+    .ai-actions {
+      display: flex;
+      justify-content: center;
+      margin: 4px calc(-28px) 0 calc(-56px);
+    }
+    .ai-icon {
+      position: absolute;
+      top: 22px;
+      left: 22px;
+      width: 48px; height: 48px;
+      margin: 0;
+      border-radius: 14px;
+      background: linear-gradient(135deg, rgba(90,200,250,0.35), rgba(175,82,222,0.25));
+      border: 1px solid rgba(255,255,255,0.2);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 22px;
+    }
+    .btn-skip-prominent {
+      background: rgba(255,255,255,0.16) !important;
+      border-color: rgba(255,255,255,0.28) !important;
+    }
+</style>
+</head>
+<body class="screen-body">
+  <div class="banner">Screen 15 — AI Estimates ·
+    <a href="screen-14-connect-liquid-glass.html">← Screen 14</a>
+    <a href="screen-16-review-liquid-glass.html">Screen 16 →</a>
+    <a href="guided-all-screens.html">All screens</a>
+    <a href="index.html">Index</a></div>
+
+  <div class="window">
+    <header class="header liquid">
+      <div class="header-left">
+        <span class="app-name">Retirement Planner</span>
+        <div class="pill-toggle">
+          <button type="button" class="on">Guided</button>
+          <button type="button">Expert</button>
+        </div>
+      </div>
+      <span class="build">UI Jun 23 · liquid glass</span>
+    </header>
+
+    <main class="main">
+      <div class="step-row">
+        <h1 class="step-title">AI Estimates <span style="font-size:18px;color:var(--muted);font-weight:400">(optional)</span></h1>
+        <button type="button" class="btn-help" id="help-open">Help</button>
+      </div>
+      <div class="content-glass liquid liquid-strong wide">
+          <div class="glass-inner ai-card">
+            <div class="ai-icon">✦</div>
+            <p>Let AI fill in reasonable estimates for unanswered fields. Review everything on the next screen before running your plan.</p>
+            <div class="ai-actions"><button type="button" class="connect-btn">Run AI estimates</button></div>
+          </div>
+        </div>
+    </main>
+
+    <div class="chrome-dock liquid">
+      <div class="step-footer">
+        <div class="footer-left">
+          <button type="button" class="btn btn-secondary">← Back</button>
+          <button type="button" class="btn btn-secondary btn-skip-prominent">Skip for now</button>
+        </div>
+        <button type="button" class="btn btn-primary">Continue →</button>
+      </div>
+      <div class="progress-strip">
+        <span>Step 15 of 16</span>
+        <div class="dots"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i></div>
+        <span>Connect</span>
+      </div>
+    </div>
+    <div class="help-backdrop" id="backdrop"></div>
+    <aside class="help-panel liquid liquid-strong" id="panel">
+      <div class="help-head"><span>Help — AI Estimates</span><button type="button" class="btn-x" id="help-close">✕</button></div>
+      <div class="help-body"><div class="help-item"><h3>What it does</h3><p>AI can research and suggest values for fields you skipped — Social Security estimates, healthcare benchmarks, etc.</p></div><div class="help-item"><h3>Skip</h3><p>Optional step. You can fill everything manually or run with defaults.</p></div></div>
+    </aside>
+  </div>
+
+  <script>
+    const p = document.getElementById('panel'), b = document.getElementById('backdrop');
+    document.getElementById('help-open').onclick = () => { p.classList.add('open'); b.classList.add('open'); };
+    document.getElementById('help-close').onclick = () => { p.classList.remove('open'); b.classList.remove('open'); };
+    b.onclick = () => { p.classList.remove('open'); b.classList.remove('open'); };
+  </script>
+</body>
+</html>

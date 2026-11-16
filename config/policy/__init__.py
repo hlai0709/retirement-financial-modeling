@@ -1,0 +1,1 @@
+"""IRS policy tables: bundled JSON, live loader, and newsroom fetch."""

@@ -1,0 +1,24 @@
+{
+  "parser_id": "w2",
+  "config_version": "2024_v1",
+  "description": "IRS Form W-2 box mapping. Update when IRS revises W-2 layout.",
+  "boxes": {
+    "1": "income.wages",
+    "2": "federal_tax_withheld",
+    "3": "ss_wages",
+    "4": "ss_tax",
+    "5": "medicare_wages",
+    "6": "medicare_tax",
+    "12a": "pre_tax_codes",
+    "17": "state_tax",
+    "18": "state_wages"
+  },
+  "field_map": {
+    "annual_earned_income": "1"
+  },
+  "patterns": {
+    "w2_marker": "form w-2|wage and tax statement",
+    "box_amount": "box {box} ... amount"
+  },
+  "notes": "Update field_map and box regex patterns when IRS revises W-2 layout. Add w2_2026_v1.json for new tax years."
+}

@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Variant B — System Settings</title>
+  <style>
+    :root {
+      --bg: #161618;
+      --group: #2c2c2e;
+      --group-inset: #3a3a3c;
+      --separator: rgba(255,255,255,0.08);
+      --text: #f5f5f7;
+      --secondary: #98989d;
+      --muted: #636366;
+      --accent: #0a84ff;
+      --font: -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: var(--font);
+      background: #000;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+    .banner {
+      position: fixed; top: 0; left: 0; right: 0;
+      background: #1a3a5c; color: #64b5f6;
+      font-size: 11px; text-align: center; padding: 6px; z-index: 200;
+    }
+    .window {
+      width: 980px; height: 740px;
+      background: var(--bg);
+      border-radius: 10px;
+      border: 1px solid rgba(255,255,255,0.06);
+      display: flex; flex-direction: column;
+      position: relative; overflow: hidden;
+    }
+    .header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 12px 20px;
+      border-bottom: 1px solid var(--separator);
+      flex-shrink: 0;
+    }
+    .header-left { display: flex; align-items: center; gap: 16px; }
+    .app-name { font-size: 13px; font-weight: 600; }
+    .segmented {
+      display: inline-flex;
+      background: var(--group);
+      border-radius: 7px;
+      padding: 2px;
+    }
+    .segmented button {
+      font-family: var(--font);
+      font-size: 12px; font-weight: 500;
+      border: none; background: transparent;
+      color: var(--secondary);
+      padding: 5px 14px; border-radius: 5px;
+    }
+    .segmented button.on {
+      background: var(--group-inset);
+      color: var(--text);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+    }
+    .build { font-size: 11px; color: var(--muted); }
+
+    .main { flex: 1; padding: 32px 48px; overflow: auto; }
+    .eyebrow { font-size: 11px; color: var(--muted); margin-bottom: 6px; }
+    .step-row {
+      display: flex; justify-content: space-between; align-items: flex-start;
+      margin-bottom: 32px;
+    }
+    .step-title {
+      font-size: 28px;
+      font-weight: 600;
+      letter-spacing: -0.03em;
+      line-height: 1.15;
+    }
+    .btn-help {
+      font-family: var(--font);
+      font-size: 13px; color: var(--accent);
+      background: none; border: none;
+      cursor: pointer; padding: 4px 0;
+    }
+
+    /* macOS Settings grouped style — no outer card */
+    .group {
+      background: var(--group);
+      border-radius: 10px;
+      overflow: hidden;
+      max-width: 580px;
+    }
+    .group-section { padding: 18px 20px; }
+    .group-section + .group-section {
+      border-top: 1px solid var(--separator);
+    }
+    .q-num { font-size: 11px; color: var(--muted); font-weight: 600; margin-bottom: 6px; }
+    .q-text { font-size: 15px; font-weight: 500; margin-bottom: 14px; }
+
+    .seg-control {
+      display: inline-flex;
+      background: #1c1c1e;
+      border-radius: 8px;
+      padding: 2px;
+      width: 100%;
+      max-width: 340px;
+    }
+    .seg-control label {
+      flex: 1;
+      text-align: center;
+      font-size: 13px;
+      padding: 8px 12px;
+      border-radius: 6px;
+      color: var(--secondary);
+      cursor: default;
+    }
+    .seg-control label.sel {
+      background: var(--group-inset);
+      color: var(--text);
+      font-weight: 500;
+    }
+
+    .field-row {
+      display: flex; align-items: center; gap: 12px;
+    }
+    select {
+      font-family: var(--font);
+      font-size: 13px;
+      background: #1c1c1e;
+      border: none;
+      color: var(--text);
+      padding: 8px 12px;
+      border-radius: 8px;
+      width: 88px;
+    }
+    .caption { font-size: 12px; color: var(--muted); margin-top: 10px; }
+
+    .step-footer {
+      display: flex; justify-content: space-between;
+      padding: 14px 48px;
+      border-top: 1px solid var(--separator);
+    }
+    .btn-ghost {
+      font-family: var(--font);
+      font-size: 13px; color: var(--accent);
+      background: none; border: none; padding: 8px 4px;
+    }
+    .btn-ghost.dim { color: var(--muted); }
+    .btn-primary {
+      font-family: var(--font);
+      font-size: 13px; font-weight: 500;
+      background: var(--accent);
+      color: #fff; border: none;
+      padding: 8px 20px; border-radius: 8px;
+    }
+
+    .progress-strip {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 8px 20px;
+      border-top: 1px solid var(--separator);
+      font-size: 11px; color: var(--muted);
+    }
+    .dots { display: flex; gap: 3px; }
+    .dots i { width: 20px; height: 2px; border-radius: 1px; background: var(--group-inset); }
+    .dots i.on { background: var(--accent); }
+
+    .help-backdrop { display: none; position: absolute; inset: 0; background: rgba(0,0,0,0.4); z-index: 50; }
+    .help-backdrop.open { display: block; }
+    .help-panel {
+      position: absolute; top: 0; right: 0; width: 340px; height: 100%;
+      background: var(--group);
+      border-left: 1px solid var(--separator);
+      z-index: 60; transform: translateX(100%);
+      transition: transform 0.2s ease;
+      display: flex; flex-direction: column;
+    }
+    .help-panel.open { transform: translateX(0); }
+    .help-head {
+      padding: 18px 20px;
+      border-bottom: 1px solid var(--separator);
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .help-head span { font-size: 15px; font-weight: 600; }
+    .help-body { padding: 16px 20px; overflow-y: auto; flex: 1; }
+    .help-item + .help-item { margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--separator); }
+    .help-item h3 { font-size: 13px; font-weight: 600; margin-bottom: 6px; }
+    .help-item p { font-size: 13px; color: var(--secondary); line-height: 1.5; }
+    .btn-x { background: none; border: none; color: var(--muted); font-size: 16px; cursor: pointer; }
+  </style>
+</head>
+<body>
+  <div class="banner">Variant B — System Settings · macOS grouped panels, segmented controls, system blue</div>
+  <div class="window">
+    <header class="header">
+      <div class="header-left">
+        <span class="app-name">Retirement Planner</span>
+        <div class="segmented">
+          <button class="on">Guided</button>
+          <button>Expert</button>
+        </div>
+      </div>
+      <span class="build">UI Jun 23 · polish pass</span>
+    </header>
+
+    <main class="main">
+      <p class="eyebrow">Start · Step 1 of 14</p>
+      <div class="step-row">
+        <h1 class="step-title">Household setup</h1>
+        <button class="btn-help" id="help-open">Help</button>
+      </div>
+
+      <div class="group">
+        <div class="group-section">
+          <div class="q-num">1</div>
+          <div class="q-text">How are you modeling your household?</div>
+          <div class="seg-control">
+            <label class="sel">Together (joint)</label>
+            <label>Separately</label>
+          </div>
+        </div>
+        <div class="group-section">
+          <div class="q-num">2</div>
+          <div class="q-text">Where do you live?</div>
+          <div class="field-row">
+            <select><option>CA</option></select>
+          </div>
+          <p class="caption">Tax tables in use: 2024 federal + CA state</p>
+        </div>
+      </div>
+    </main>
+
+    <div class="step-footer">
+      <div>
+        <button class="btn-ghost dim">← Back</button>
+        <button class="btn-ghost" style="margin-left:16px">Skip for now</button>
+      </div>
+      <button class="btn-primary">Continue</button>
+    </div>
+
+    <div class="progress-strip">
+      <span>Step 1 of 14</span>
+      <div class="dots"><i class="on"></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+      <span>Start</span>
+    </div>
+
+    <div class="help-backdrop" id="backdrop"></div>
+    <aside class="help-panel" id="panel">
+      <div class="help-head"><span>Help</span><button class="btn-x" id="help-close">✕</button></div>
+      <div class="help-body">
+        <div class="help-item">
+          <h3>1 · Household modeling</h3>
+          <p><strong>Together (joint)</strong> — one household, shared assets and taxes.<br><br><strong>Separately</strong> — independent projections per person.</p>
+        </div>
+        <div class="help-item">
+          <h3>2 · State of residence</h3>
+          <p>Sets state income tax tables for your projection. Relocation can be modeled later.</p>
+        </div>
+      </div>
+    </aside>
+  </div>
+  <script>
+    const p = document.getElementById('panel'), b = document.getElementById('backdrop');
+    document.getElementById('help-open').onclick = () => { p.classList.add('open'); b.classList.add('open'); };
+    document.getElementById('help-close').onclick = () => { p.classList.remove('open'); b.classList.remove('open'); };
+    b.onclick = () => { p.classList.remove('open'); b.classList.remove('open'); };
+  </script>
+</body>
+</html>

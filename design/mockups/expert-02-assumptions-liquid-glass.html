@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Expert — Assumptions · Liquid Glass</title>
+  <link rel="stylesheet" href="liquid-glass.css" />
+  <style>
+    .select-wrap::after {
+      content: "";
+      position: absolute; right: 14px; top: 50%;
+      transform: translateY(-50%);
+      border-left: 4px solid transparent;
+      border-right: 4px solid transparent;
+      border-top: 5px solid rgba(255,255,255,0.5);
+      pointer-events: none;
+    }
+    .glass-input.year { width: 88px; }
+</style>
+</head>
+<body class="screen-body">
+  <div class="banner">Expert · Assumptions · <a href="expert-01-setup-liquid-glass.html">← Setup</a> <a href="expert-03-ai-assistant-liquid-glass.html">AI Assistant →</a>
+    <a href="expert-all-screens.html">All sections</a>
+    <a href="index.html">Index</a></div>
+
+  <div class="window expert-window">
+    <header class="header liquid">
+      <div class="header-left">
+        <span class="app-name">Retirement Planner</span>
+        <div class="pill-toggle">
+          <button type="button">Guided</button>
+          <button type="button" class="on">Expert</button>
+        </div>
+      </div>
+      <span class="build">UI Jun 23 · liquid glass</span>
+    </header>
+
+    <div class="expert-body">
+      <nav class="section-rail liquid" aria-label="Sections">
+        <span class="rail-label">Sections</span><button type="button" class="rail-link">Setup</button><button type="button" class="rail-link on">Assumptions</button><button type="button" class="rail-link">AI Assistant</button><button type="button" class="rail-link">Live Data</button><button type="button" class="rail-link">Simulate</button><button type="button" class="rail-link">Settings</button>
+      </nav>
+      <main class="expert-main">
+        <div class="expert-main-head">
+          <div>
+            <h1 class="expert-title">Assumptions</h1>
+            <p class="expert-subtitle">All planning fields — grouped by topic</p>
+          </div>
+          <button type="button" class="link-guided">Jump to Guided →</button>
+        </div>
+        <div class="expert-toolbar"><div class="radio-row"><div class="radio-pill on">Shared</div><div class="radio-pill">Self</div><div class="radio-pill">Wife</div></div><input class="glass-input search" type="text" placeholder="Search fields…" readonly /></div><div class="section-groups"><details class="section-group liquid" open><summary>Timeline & longevity</summary><div class="group-fields"><div class="field-row"><span class="field-label">Current age</span><input class="glass-input narrow" type="text" value="58" readonly /></div><div class="field-row"><span class="field-label">Birth year</span><input class="glass-input narrow year" type="text" value="1968" readonly /></div><div class="field-row"><span class="field-label">Life expectancy</span><input class="glass-input narrow" type="text" value="95" readonly /></div><div class="field-row"><span class="field-label">Marriage year</span><input class="glass-input narrow year" type="text" value="1992" readonly /></div></div></details><details class="section-group liquid"><summary>Market assumptions</summary><div class="group-fields"><div class="field-row"><span class="field-label">Inflation rate</span><input class="glass-input medium" type="text" value="2.5%" readonly /></div><div class="field-row"><span class="field-label">Investment return</span><input class="glass-input medium" type="text" value="6.5%" readonly /></div></div></details><details class="section-group liquid"><summary>Your income & savings</summary><div class="group-fields"><div class="field-row"><span class="field-label">Retirement age</span><input class="glass-input narrow" type="text" value="62" readonly /></div><div class="field-row"><span class="field-label">Annual earned income</span><div class="input-dollar"><span class="prefix">$</span><input type="text" value="185,000" readonly /></div></div><div class="field-row"><span class="field-label">Annual contributions</span><div class="input-dollar"><span class="prefix">$</span><input type="text" value="36,000" readonly /></div></div></div></details><details class="section-group liquid"><summary>Taxes & benefits</summary><div class="group-fields"><div class="field-row"><span class="field-label">Social Security start age</span><input class="glass-input narrow" type="text" value="67" readonly /></div><div class="field-row"><span class="field-label">Annual Social Security</span><div class="input-dollar"><span class="prefix">$</span><input type="text" value="42,000" readonly /></div></div></div></details><p class="more-fields">+ 8 more groups when scrolling (assets, spending, healthcare, spouse fields…)</p></div>
+      </main>
+    </div>
+
+    <div class="status-dock liquid">
+      <div class="status-copy">
+        <h2>Expert editor</h2>
+        <p>Assumptions</p>
+      </div>
+      <button type="button" class="btn btn-run">Run plan</button>
+    </div>
+  </div>
+</body>
+</html>

@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Expert — AI Assistant · Liquid Glass</title>
+  <link rel="stylesheet" href="liquid-glass.css" />
+  <style>
+    .select-wrap::after {
+      content: "";
+      position: absolute; right: 14px; top: 50%;
+      transform: translateY(-50%);
+      border-left: 4px solid transparent;
+      border-right: 4px solid transparent;
+      border-top: 5px solid rgba(255,255,255,0.5);
+      pointer-events: none;
+    }
+    .glass-input.year { width: 88px; }
+</style>
+</head>
+<body class="screen-body">
+  <div class="banner">Expert · AI Assistant · <a href="expert-02-assumptions-liquid-glass.html">← Assumptions</a> <a href="expert-04-live-data-liquid-glass.html">Live Data →</a>
+    <a href="expert-all-screens.html">All sections</a>
+    <a href="index.html">Index</a></div>
+
+  <div class="window expert-window">
+    <header class="header liquid">
+      <div class="header-left">
+        <span class="app-name">Retirement Planner</span>
+        <div class="pill-toggle">
+          <button type="button">Guided</button>
+          <button type="button" class="on">Expert</button>
+        </div>
+      </div>
+      <span class="build">UI Jun 23 · liquid glass</span>
+    </header>
+
+    <div class="expert-body">
+      <nav class="section-rail liquid" aria-label="Sections">
+        <span class="rail-label">Sections</span><button type="button" class="rail-link">Setup</button><button type="button" class="rail-link">Assumptions</button><button type="button" class="rail-link on">AI Assistant</button><button type="button" class="rail-link">Live Data</button><button type="button" class="rail-link">Simulate</button><button type="button" class="rail-link">Settings</button>
+      </nav>
+      <main class="expert-main">
+        <div class="expert-main-head">
+          <div>
+            <h1 class="expert-title">AI Assistant</h1>
+            <p class="expert-subtitle">Batch-estimate empty fields with AI</p>
+          </div>
+          <button type="button" class="link-guided">Jump to Guided →</button>
+        </div>
+        <div class="content-glass liquid liquid-strong" style="max-width:none">
+          <div class="glass-inner llm-panel">
+            <p class="caption" style="margin-top:0;margin-bottom:14px">API key configured · model gpt-4o</p>
+            <p class="field-label" style="margin-bottom:8px">Additional context (optional)</p>
+            <textarea class="glass-input" readonly>Focus on conservative estimates for healthcare and Social Security.</textarea>
+            <div class="expert-toolbar" style="margin-top:16px;margin-bottom:10px">
+              <span class="field-label" style="font-weight:600;color:var(--text)">Select fields to research</span>
+              <div class="radio-row">
+                <div class="radio-pill">All</div><div class="radio-pill">None</div><div class="radio-pill on">Empty only</div>
+              </div>
+            </div>
+            <div class="llm-checklist"><label class="check-row"><input type="checkbox checked readonly />Self · Social Security benefit</label><label class="check-row"><input type="checkbox checked readonly />Self · Pre-Medicare health insurance</label><label class="check-row"><input type="checkbox readonly />Wife · Annual earned income</label><label class="check-row"><input type="checkbox checked readonly />Shared · Inflation rate</label><label class="check-row"><input type="checkbox readonly />Self · Medigap monthly premium</label></div>
+            <div style="margin-top:16px;display:flex;justify-content:center">
+              <button type="button" class="connect-btn">Run batch research</button>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+
+    <div class="status-dock liquid">
+      <div class="status-copy">
+        <h2>Expert editor</h2>
+        <p>AI Assistant</p>
+      </div>
+      <button type="button" class="btn btn-run">Run plan</button>
+    </div>
+  </div>
+</body>
+</html>

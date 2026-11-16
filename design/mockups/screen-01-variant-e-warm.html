@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Variant E — Warm System Dark</title>
+  <style>
+    :root {
+      --bg: #1c1c1e;
+      --secondary-bg: #2c2c2e;
+      --tertiary: #3a3a3c;
+      --separator: #38383a;
+      --text: #f5f5f7;
+      --secondary: #ebebf5;
+      --label: #98989d;
+      --accent: #64d2ff;
+      --font: -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: var(--font);
+      background: #000;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+    .banner {
+      position: fixed; top: 0; left: 0; right: 0;
+      background: #2c2c2e; color: #64d2ff;
+      font-size: 11px; text-align: center; padding: 6px; z-index: 200;
+    }
+    .window {
+      width: 980px; height: 740px;
+      background: var(--bg);
+      border-radius: 10px;
+      display: flex; flex-direction: column;
+      position: relative; overflow: hidden;
+      box-shadow: 0 0 0 1px rgba(255,255,255,0.05);
+    }
+    .header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 10px 16px;
+      background: var(--secondary-bg);
+      flex-shrink: 0;
+    }
+    .toolbar {
+      display: flex; align-items: center; gap: 8px;
+      width: 100%;
+    }
+    .traffic { display: flex; gap: 7px; margin-right: 12px; }
+    .traffic i { width: 12px; height: 12px; border-radius: 50%; display: block; }
+    .traffic i:nth-child(1) { background: #ff5f57; }
+    .traffic i:nth-child(2) { background: #febc2e; }
+    .traffic i:nth-child(3) { background: #28c840; }
+    .app-name { font-size: 13px; font-weight: 600; flex: 1; text-align: center; }
+    .header-actions { display: flex; align-items: center; gap: 12px; }
+    .nsseg {
+      display: flex;
+      background: rgba(0,0,0,0.25);
+      border-radius: 6px;
+      padding: 1px;
+    }
+    .nsseg button {
+      font-family: var(--font);
+      font-size: 11px; font-weight: 500;
+      border: none; background: transparent;
+      color: var(--label);
+      padding: 4px 12px; border-radius: 5px;
+    }
+    .nsseg button.on {
+      background: var(--tertiary);
+      color: var(--text);
+    }
+    .build { font-size: 10px; color: var(--label); }
+
+    .main { flex: 1; padding: 24px 32px; overflow: auto; }
+    .sidebar-hint {
+      font-size: 11px;
+      color: var(--label);
+      margin-bottom: 4px;
+    }
+    .step-row {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-bottom: 20px;
+    }
+    .step-title { font-size: 22px; font-weight: 700; letter-spacing: -0.02em; }
+    .btn-help {
+      font-family: var(--font);
+      font-size: 12px;
+      color: var(--accent);
+      background: var(--tertiary);
+      border: none;
+      padding: 5px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    /* Inset grouped table — native macOS form style */
+    .inset-group {
+      background: var(--secondary-bg);
+      border-radius: 8px;
+      box-shadow: inset 0 0 0 1px rgba(0,0,0,0.15);
+      max-width: 520px;
+      overflow: hidden;
+    }
+    .inset-row {
+      padding: 14px 16px;
+      display: grid;
+      grid-template-columns: 28px 1fr;
+      gap: 4px 12px;
+      align-items: start;
+    }
+    .inset-row + .inset-row {
+      border-top: 1px solid var(--separator);
+    }
+    .row-num {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--accent);
+      padding-top: 2px;
+    }
+    .row-label {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--secondary);
+      margin-bottom: 10px;
+      opacity: 0.9;
+    }
+    .row-control { grid-column: 2; }
+
+    .radio-native { display: flex; gap: 20px; }
+    .radio-native label {
+      font-size: 13px;
+      color: var(--label);
+      display: flex; align-items: center; gap: 6px;
+    }
+    .radio-native label.sel { color: var(--text); }
+    .rd {
+      width: 14px; height: 14px;
+      border-radius: 50%;
+      border: 1.5px solid var(--label);
+      position: relative;
+    }
+    label.sel .rd { border-color: var(--accent); }
+    label.sel .rd::after {
+      content: "";
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--accent);
+      position: absolute;
+      top: 2px; left: 2px;
+    }
+
+    select {
+      font-family: var(--font);
+      font-size: 13px;
+      background: var(--bg);
+      border: 1px solid var(--separator);
+      border-radius: 5px;
+      color: var(--text);
+      padding: 4px 8px;
+      width: 72px;
+      box-shadow: 0 1px 0 rgba(255,255,255,0.04);
+    }
+    .caption { font-size: 11px; color: var(--label); margin-top: 8px; }
+
+    .step-footer {
+      display: flex; justify-content: space-between;
+      padding: 12px 32px;
+      background: var(--secondary-bg);
+      border-top: 1px solid var(--separator);
+    }
+    .btn-ghost {
+      font-family: var(--font);
+      font-size: 13px;
+      color: var(--accent);
+      background: none; border: none;
+      padding: 6px 10px;
+    }
+    .btn-ghost.dim { color: var(--label); }
+    .btn-primary {
+      font-family: var(--font);
+      font-size: 13px; font-weight: 500;
+      background: var(--accent);
+      color: #003547;
+      border: none;
+      padding: 6px 18px;
+      border-radius: 6px;
+    }
+
+    .progress-strip {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 6px 16px;
+      font-size: 10px;
+      color: var(--label);
+      background: var(--bg);
+      border-top: 1px solid var(--separator);
+    }
+    .dots { display: flex; gap: 2px; }
+    .dots i { width: 16px; height: 3px; border-radius: 1.5px; background: var(--tertiary); }
+    .dots i.on { background: var(--accent); }
+
+    .help-backdrop { display: none; position: absolute; inset: 0; background: rgba(0,0,0,0.45); z-index: 50; }
+    .help-backdrop.open { display: block; }
+    .help-panel {
+      position: absolute; top: 0; right: 0;
+      width: 300px; height: 100%;
+      background: var(--secondary-bg);
+      border-left: 1px solid var(--separator);
+      z-index: 60;
+      transform: translateX(100%);
+      transition: transform 0.18s ease;
+      display: flex; flex-direction: column;
+    }
+    .help-panel.open { transform: translateX(0); }
+    .help-head {
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--separator);
+      font-size: 13px; font-weight: 600;
+      display: flex; justify-content: space-between;
+    }
+    .help-body { padding: 12px 16px; overflow-y: auto; flex: 1; font-size: 12px; color: var(--label); line-height: 1.5; }
+    .help-body h4 { font-size: 12px; color: var(--secondary); margin: 12px 0 4px; }
+    .help-body h4:first-child { margin-top: 0; }
+    .btn-x { background: none; border: none; color: var(--label); cursor: pointer; }
+  </style>
+</head>
+<body>
+  <div class="banner">Variant E — Warm System Dark · native macOS palette, inset controls, traffic lights</div>
+  <div class="window">
+    <header class="header">
+      <div class="toolbar">
+        <div class="traffic"><i></i><i></i><i></i></div>
+        <span class="app-name">Retirement Planner</span>
+        <div class="header-actions">
+          <div class="nsseg">
+            <button class="on">Guided</button>
+            <button>Expert</button>
+          </div>
+          <span class="build">UI Jun 23</span>
+        </div>
+      </div>
+    </header>
+
+    <main class="main">
+      <p class="sidebar-hint">Start · Step 1 of 14</p>
+      <div class="step-row">
+        <h1 class="step-title">Household setup</h1>
+        <button class="btn-help" id="help-open">Help</button>
+      </div>
+
+      <div class="inset-group">
+        <div class="inset-row">
+          <span class="row-num">1</span>
+          <div>
+            <div class="row-label">How are you modeling your household?</div>
+            <div class="row-control">
+              <div class="radio-native">
+                <label class="sel"><span class="rd"></span>Together (joint)</label>
+                <label><span class="rd"></span>Separately</label>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="inset-row">
+          <span class="row-num">2</span>
+          <div>
+            <div class="row-label">Where do you live?</div>
+            <div class="row-control">
+              <select><option>CA</option></select>
+              <p class="caption">Tax tables: 2024 federal + CA state</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <div class="step-footer">
+      <div>
+        <button class="btn-ghost dim">← Back</button>
+        <button class="btn-ghost" style="margin-left:8px">Skip for now</button>
+      </div>
+      <button class="btn-primary">Continue →</button>
+    </div>
+
+    <div class="progress-strip">
+      <span>Step 1 of 14</span>
+      <div class="dots"><i class="on"></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+      <span>Start</span>
+    </div>
+
+    <div class="help-backdrop" id="backdrop"></div>
+    <aside class="help-panel" id="panel">
+      <div class="help-head"><span>Help — Household setup</span><button class="btn-x" id="help-close">✕</button></div>
+      <div class="help-body">
+        <h4>1 · Household modeling</h4>
+        Together (joint) = shared plan. Separately = per-person projections.
+        <h4>2 · State of residence</h4>
+        Drives state tax tables. Add a move in Timeline if needed.
+      </div>
+    </aside>
+  </div>
+  <script>
+    const p = document.getElementById('panel'), b = document.getElementById('backdrop');
+    document.getElementById('help-open').onclick = () => { p.classList.add('open'); b.classList.add('open'); };
+    document.getElementById('help-close').onclick = () => { p.classList.remove('open'); b.classList.remove('open'); };
+    b.onclick = () => { p.classList.remove('open'); b.classList.remove('open'); };
+  </script>
+</body>
+</html>

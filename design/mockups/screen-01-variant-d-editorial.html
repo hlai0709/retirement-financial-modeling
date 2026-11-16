@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Variant D — Editorial Type</title>
+  <style>
+    :root {
+      --bg: #111111;
+      --text: #ffffff;
+      --secondary: #a1a1a6;
+      --muted: #6e6e73;
+      --rule: rgba(255,255,255,0.12);
+      --accent: #ffffff;
+      --font-text: -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
+      --font-display: -apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: var(--font-text);
+      background: #000;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+    .banner {
+      position: fixed; top: 0; left: 0; right: 0;
+      background: #222; color: #aaa;
+      font-size: 11px; text-align: center; padding: 6px; z-index: 200;
+    }
+    .window {
+      width: 980px; height: 740px;
+      background: var(--bg);
+      display: flex; flex-direction: column;
+      position: relative; overflow: hidden;
+    }
+    .header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 20px 56px 0;
+      flex-shrink: 0;
+    }
+    .app-name {
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--muted);
+      letter-spacing: 0.02em;
+    }
+    .header-right { display: flex; align-items: center; gap: 20px; }
+    .mode-link {
+      font-size: 12px;
+      color: var(--muted);
+      text-decoration: none;
+    }
+    .mode-link.active { color: var(--text); border-bottom: 1px solid var(--text); padding-bottom: 2px; }
+    .build { font-size: 11px; color: var(--muted); }
+
+    .main {
+      flex: 1;
+      padding: 48px 56px 32px;
+      overflow: auto;
+      max-width: 640px;
+    }
+    .eyebrow {
+      font-size: 12px;
+      color: var(--muted);
+      margin-bottom: 20px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+    .step-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-bottom: 56px;
+    }
+    .step-title {
+      font-family: var(--font-display);
+      font-size: 42px;
+      font-weight: 600;
+      letter-spacing: -0.04em;
+      line-height: 1.05;
+    }
+    .btn-help {
+      font-family: var(--font-text);
+      font-size: 13px;
+      color: var(--secondary);
+      background: none;
+      border: none;
+      text-decoration: underline;
+      text-underline-offset: 3px;
+      cursor: pointer;
+      padding: 0;
+    }
+
+    /* No card — editorial flow */
+    .question {
+      padding-bottom: 48px;
+      margin-bottom: 48px;
+      border-bottom: 1px solid var(--rule);
+    }
+    .question:last-of-type { border-bottom: none; margin-bottom: 0; }
+
+    .q-meta {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--muted);
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      margin-bottom: 12px;
+    }
+    .q-text {
+      font-family: var(--font-display);
+      font-size: 22px;
+      font-weight: 500;
+      letter-spacing: -0.02em;
+      line-height: 1.3;
+      margin-bottom: 24px;
+    }
+
+    .choices { display: flex; flex-direction: column; gap: 10px; }
+    .choice {
+      font-size: 15px;
+      color: var(--secondary);
+      display: flex; align-items: center; gap: 10px;
+    }
+    .choice.sel { color: var(--text); }
+    .choice::before {
+      content: "";
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: transparent;
+      border: 1px solid var(--muted);
+    }
+    .choice.sel::before { background: var(--text); border-color: var(--text); }
+
+    select {
+      font-family: var(--font-text);
+      font-size: 15px;
+      background: transparent;
+      border: none;
+      border-bottom: 1px solid var(--rule);
+      color: var(--text);
+      padding: 8px 0;
+      width: 80px;
+    }
+    .caption {
+      font-size: 13px;
+      color: var(--muted);
+      margin-top: 16px;
+      font-style: italic;
+    }
+
+    .step-footer {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 20px 56px;
+      border-top: 1px solid var(--rule);
+    }
+    .btn-ghost {
+      font-family: var(--font-text);
+      font-size: 14px;
+      color: var(--secondary);
+      background: none; border: none;
+    }
+    .btn-ghost.dim { color: var(--muted); }
+    .btn-primary {
+      font-family: var(--font-text);
+      font-size: 14px; font-weight: 500;
+      background: var(--text);
+      color: var(--bg);
+      border: none;
+      padding: 12px 28px;
+      border-radius: 0;
+    }
+
+    .progress-strip {
+      display: flex; justify-content: space-between;
+      padding: 12px 56px;
+      font-size: 11px;
+      color: var(--muted);
+      letter-spacing: 0.04em;
+    }
+    .bar {
+      flex: 1;
+      max-width: 200px;
+      height: 1px;
+      background: var(--rule);
+      margin: 0 24px;
+      align-self: center;
+      position: relative;
+    }
+    .bar::after {
+      content: "";
+      position: absolute;
+      left: 0; top: 0;
+      width: 7%;
+      height: 100%;
+      background: var(--text);
+    }
+
+    .help-backdrop { display: none; position: absolute; inset: 0; background: rgba(0,0,0,0.7); z-index: 50; }
+    .help-backdrop.open { display: block; }
+    .help-panel {
+      position: absolute; top: 0; right: 0;
+      width: 380px; height: 100%;
+      background: var(--bg);
+      border-left: 1px solid var(--rule);
+      z-index: 60;
+      transform: translateX(100%);
+      transition: transform 0.2s ease;
+      padding: 48px 40px;
+      overflow-y: auto;
+    }
+    .help-panel.open { transform: translateX(0); }
+    .help-panel h2 {
+      font-family: var(--font-display);
+      font-size: 24px;
+      font-weight: 600;
+      letter-spacing: -0.03em;
+      margin-bottom: 32px;
+    }
+    .help-item + .help-item { margin-top: 32px; padding-top: 32px; border-top: 1px solid var(--rule); }
+    .help-item h3 { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 8px; }
+    .help-item p { font-size: 15px; color: var(--secondary); line-height: 1.6; }
+    .btn-x {
+      position: absolute; top: 20px; right: 24px;
+      background: none; border: none; color: var(--muted);
+      font-size: 18px; cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <div class="banner">Variant D — Editorial Type · typography-first, minimal chrome, monochrome</div>
+  <div class="window">
+    <header class="header">
+      <span class="app-name">Retirement Planner</span>
+      <div class="header-right">
+        <a class="mode-link active" href="#">Guided</a>
+        <a class="mode-link" href="#">Expert</a>
+        <span class="build">UI Jun 23</span>
+      </div>
+    </header>
+
+    <main class="main">
+      <p class="eyebrow">Start · 1 of 14</p>
+      <div class="step-row">
+        <h1 class="step-title">Household<br>setup</h1>
+        <button class="btn-help" id="help-open">Help</button>
+      </div>
+
+      <div class="question">
+        <div class="q-meta">Question 1</div>
+        <div class="q-text">How are you modeling your household?</div>
+        <div class="choices">
+          <div class="choice sel">Together (joint)</div>
+          <div class="choice">Separately</div>
+        </div>
+      </div>
+
+      <div class="question">
+        <div class="q-meta">Question 2</div>
+        <div class="q-text">Where do you live?</div>
+        <select><option>CA</option></select>
+        <p class="caption">Tax tables in use: 2024 federal + CA state</p>
+      </div>
+    </main>
+
+    <div class="step-footer">
+      <div>
+        <button class="btn-ghost dim">Back</button>
+        <button class="btn-ghost" style="margin-left:24px">Skip</button>
+      </div>
+      <button class="btn-primary">Continue</button>
+    </div>
+
+    <div class="progress-strip">
+      <span>1 / 14</span>
+      <div class="bar"></div>
+      <span>Start</span>
+    </div>
+
+    <div class="help-backdrop" id="backdrop"></div>
+    <aside class="help-panel" id="panel">
+      <button class="btn-x" id="help-close">✕</button>
+      <h2>Help</h2>
+      <div class="help-item">
+        <h3>Question 1</h3>
+        <p><strong>Together (joint)</strong> — one household with shared assets and taxes. <strong>Separately</strong> — independent projections.</p>
+      </div>
+      <div class="help-item">
+        <h3>Question 2</h3>
+        <p>Your state sets income tax tables. Model relocation in Timeline.</p>
+      </div>
+    </aside>
+  </div>
+  <script>
+    const p = document.getElementById('panel'), b = document.getElementById('backdrop');
+    document.getElementById('help-open').onclick = () => { p.classList.add('open'); b.classList.add('open'); };
+    document.getElementById('help-close').onclick = () => { p.classList.remove('open'); b.classList.remove('open'); };
+    b.onclick = () => { p.classList.remove('open'); b.classList.remove('open'); };
+  </script>
+</body>
+</html>

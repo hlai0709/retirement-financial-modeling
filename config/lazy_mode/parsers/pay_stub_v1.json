@@ -1,0 +1,80 @@
+{
+  "parser_id": "pay_stub",
+  "config_version": "v1",
+  "description": "Pay stub text patterns for retirement deferrals (traditional vs Roth) and YTD gross.",
+  "roth_labels": [
+    "roth 401k",
+    "roth 401(k)",
+    "roth 403b",
+    "roth 403(b)",
+    "roth deferral",
+    "roth contribution",
+    "roth elective",
+    "after-tax roth",
+    "roth 401 k",
+    "roth ssp",
+    "roth savings"
+  ],
+  "traditional_labels": [
+    "401k pre-tax",
+    "401(k) pre-tax",
+    "pre-tax 401k",
+    "pre-tax 401(k)",
+    "traditional 401k",
+    "traditional 401(k)",
+    "401k deferral",
+    "401(k) deferral",
+    "elective deferral",
+    "pre-tax deferral",
+    "deferred compensation",
+    "403b pre-tax",
+    "403(b) pre-tax",
+    "pre-tax 403b",
+    "pre-tax 403(b)",
+    "401 k",
+    "401k",
+    "401(k)",
+    "savings-ssp",
+    "savings ssp",
+    "savings plan",
+    "lm savings",
+    "401(k) savings"
+  ],
+  "after_tax_retirement_labels": [
+    "savings-ssp",
+    "savings ssp",
+    "after-tax 401k",
+    "after-tax 401(k)",
+    "after tax 401k",
+    "after tax 401(k)"
+  ],
+  "gross_labels": [
+    "ytd gross",
+    "gross ytd",
+    "year to date gross",
+    "gross pay ytd",
+    "total gross ytd",
+    "gross earnings ytd",
+    "gross earnings"
+  ],
+  "annual_salary_labels": [
+    "/ annual",
+    "annual salary",
+    "compensation rate"
+  ],
+  "health_premium_labels": [
+    "medical",
+    "health insurance",
+    "health premium",
+    "medical insurance",
+    "employee medical",
+    "ee medical",
+    "dental",
+    "dental insurance",
+    "vision",
+    "vision insurance",
+    "medical/dental",
+    "med/dent"
+  ],
+  "notes": "Prefer YTD columns when present. Exclude employer match lines. Lockheed Martin LMPeople uses Savings-SSP (before-tax = traditional, after-tax = Roth/after-tax bucket). Glued Current+YTD amounts are split by the extractor. Health premiums (Medical/Dental/Vision) → employer_health_monthly."
+}

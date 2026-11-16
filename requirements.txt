@@ -1,0 +1,16 @@
+pandas>=2.0
+matplotlib>=3.7
+numpy>=1.24
+keyring>=24.0
+cryptography>=41.0
+python-dotenv>=1.0
+plaid-python>=24.0
+yfinance>=0.2
+requests>=2.28
+charset-normalizer>=3.0
+py2app>=0.28; sys_platform == 'darwin'
+pywebview>=5.0; sys_platform == 'darwin'
+pypdf>=4.0
+# PDF redactor test feature (local PII redaction)
+pymupdf>=1.24
+ollama>=0.3

@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Screen 9 — Your Healthcare · Liquid Glass</title>
+  <link rel="stylesheet" href="liquid-glass.css" />
+  <style>
+    .select-wrap::after {
+      content: "";
+      position: absolute; right: 16px; top: 50%;
+      transform: translateY(-50%);
+      border-left: 4px solid transparent;
+      border-right: 4px solid transparent;
+      border-top: 5px solid rgba(255,255,255,0.5);
+      pointer-events: none;
+    }
+    .glass-input.year { width: 108px; }
+    .caption.tight { margin-top: 10px; }
+    .caption.loose { margin-top: 28px; }
+    .dots i { width: 14px; }
+    .ai-card {
+      position: relative;
+      text-align: left;
+      padding: 24px 28px 28px 84px;
+    }
+    .ai-card p { font-size: 14px; color: var(--secondary); margin-bottom: 20px; line-height: 1.55; }
+    .ai-actions {
+      display: flex;
+      justify-content: center;
+      margin: 4px calc(-28px) 0 calc(-56px);
+    }
+    .ai-icon {
+      position: absolute;
+      top: 22px;
+      left: 22px;
+      width: 48px; height: 48px;
+      margin: 0;
+      border-radius: 14px;
+      background: linear-gradient(135deg, rgba(90,200,250,0.35), rgba(175,82,222,0.25));
+      border: 1px solid rgba(255,255,255,0.2);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 22px;
+    }
+    .btn-skip-prominent {
+      background: rgba(255,255,255,0.16) !important;
+      border-color: rgba(255,255,255,0.28) !important;
+    }
+</style>
+</head>
+<body class="screen-body">
+  <div class="banner">Screen 9 — Your Healthcare ·
+    <a href="screen-08-spouse-spending-liquid-glass.html">← Screen 8</a>
+    <a href="screen-10-spouse-healthcare-liquid-glass.html">Screen 10 →</a>
+    <a href="guided-all-screens.html">All screens</a>
+    <a href="index.html">Index</a></div>
+
+  <div class="window">
+    <header class="header liquid">
+      <div class="header-left">
+        <span class="app-name">Retirement Planner</span>
+        <div class="pill-toggle">
+          <button type="button" class="on">Guided</button>
+          <button type="button">Expert</button>
+        </div>
+      </div>
+      <span class="build">UI Jun 23 · liquid glass</span>
+    </header>
+
+    <main class="main">
+      <div class="step-row">
+        <h1 class="step-title">Your Healthcare</h1>
+        <button type="button" class="btn-help" id="help-open">Help</button>
+      </div>
+      <div class="content-glass liquid liquid-strong wide"><div class="glass-inner"><p class="q-label"><span>1.</span>What do you pay annually for health insurance before Medicare?</p><div class="input-dollar"><span class="prefix">$</span><input type="text" value="12,400" readonly /></div></div><div class="glass-inner"><p class="q-label"><span>2.</span>How is employer health coverage modeled?</p><div class="radio-row"><div class="radio-pill on">Active</div><div class="radio-pill">COBRA</div><div class="radio-pill">None</div></div></div><div class="glass-inner"><p class="q-label"><span>3.</span>Which Medigap plan letter do you expect?</p><div class="select-wrap"><select class="state-select"><option selected>Plan G</option><option>Plan N</option><option>Plan F</option></select></div></div><div class="glass-inner"><p class="q-label"><span>4.</span>Should we model Medicare premiums in your plan?</p><div class="radio-row"><div class="radio-pill on">Yes</div><div class="radio-pill">No</div></div></div><p class="more-fields">+ ACA premiums, COBRA months, LTC settings, and post-Medicare costs in the app</p></div>
+    </main>
+
+    <div class="chrome-dock liquid">
+      <div class="step-footer">
+        <div class="footer-left">
+          <button type="button" class="btn btn-secondary">← Back</button>
+          <button type="button" class="btn btn-secondary">Skip for now</button>
+        </div>
+        <button type="button" class="btn btn-primary">Continue →</button>
+      </div>
+      <div class="progress-strip">
+        <span>Step 9 of 16</span>
+        <div class="dots"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+        <span>Health</span>
+      </div>
+    </div>
+    <div class="help-backdrop" id="backdrop"></div>
+    <aside class="help-panel liquid liquid-strong" id="panel">
+      <div class="help-head"><span>Help — Healthcare</span><button type="button" class="btn-x" id="help-close">✕</button></div>
+      <div class="help-body"><div class="help-item"><h3>1 · Pre-Medicare</h3><p>Annual premiums before Medicare eligibility — often the largest early-retirement cost.</p></div><div class="help-item"><h3>2 · Employer coverage</h3><p>Active employee plan, COBRA bridge, or none after leaving work.</p></div><div class="help-item"><h3>3 · Medigap</h3><p>Supplemental coverage for Medicare gaps — Plan G is a common choice.</p></div><div class="help-item"><h3>4 · Medicare</h3><p>Model Part B/D premiums and IRMAA surcharges when enabled.</p></div></div>
+    </aside>
+  </div>
+
+  <script>
+    const p = document.getElementById('panel'), b = document.getElementById('backdrop');
+    document.getElementById('help-open').onclick = () => { p.classList.add('open'); b.classList.add('open'); };
+    document.getElementById('help-close').onclick = () => { p.classList.remove('open'); b.classList.remove('open'); };
+    b.onclick = () => { p.classList.remove('open'); b.classList.remove('open'); };
+  </script>
+</body>
+</html>

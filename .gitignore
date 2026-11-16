@@ -1,0 +1,18 @@
+.venv/
+__pycache__/
+*.pyc
+*_projection.csv
+.env
+.env.*
+!.env.example
+data/
+*.local.md
+institutions.local.md
+config/policy/updates/policy_active.json
+
+# py2app build output
+build/
+dist/
+
+# macOS
+.DS_Store

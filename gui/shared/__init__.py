@@ -1,0 +1,1 @@
+"""Shared Tkinter utilities, formatting, and field binding."""

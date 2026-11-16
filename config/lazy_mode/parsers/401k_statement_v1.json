@@ -1,0 +1,9 @@
+{
+  "parser_id": "401k_statement",
+  "config_version": "1",
+  "description": "401k/IRA traditional vs Roth balance labels",
+  "field_map": {
+    "initial_traditional_ira": "traditional",
+    "initial_roth_ira": "roth"
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "parser_id": "brokerage_statement",
+  "config_version": "1",
+  "description": "Taxable brokerage ending balance labels",
+  "field_map": {
+    "initial_taxable_assets": "total_account_value"
+  }
+}

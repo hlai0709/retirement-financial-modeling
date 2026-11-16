@@ -1,0 +1,1 @@
+"""Field catalog and runtime configuration helpers."""

@@ -1,0 +1,39 @@
+{
+  "tax_year": 2024,
+  "source": "IRS Rev. Proc. 2023-34 (project baseline)",
+  "scalars": {
+    "mfj_standard_deduction": 29200,
+    "single_standard_deduction": 14600,
+    "hoh_standard_deduction": 21900,
+    "mfj_ss_base": 32000,
+    "mfj_ss_tier2": 44000,
+    "single_ss_base": 25000,
+    "single_ss_tier2": 34000,
+    "fpl_base": 15060,
+    "fpl_per_additional_person": 5380,
+    "medicare_part_b_monthly": 174.70,
+    "medicare_part_d_monthly": 55.50,
+    "mfj_additional_sd_65": 1550,
+    "single_additional_sd_65": 1950,
+    "niit_mfj_threshold": 250000,
+    "niit_single_threshold": 200000,
+    "niit_mfs_threshold": 125000
+  },
+  "brackets": {
+    "mfj": [[23200, 0.10], [94300, 0.12], [201050, 0.22], [383900, 0.24], [487450, 0.32], [731200, 0.35], ["inf", 0.37]],
+    "single": [[11600, 0.10], [47150, 0.12], [100525, 0.22], [191950, 0.24], [243725, 0.32], [609350, 0.35], ["inf", 0.37]],
+    "hoh": [[17400, 0.10], [66200, 0.12], [105550, 0.22], [201050, 0.24], [243700, 0.32], [609350, 0.35], ["inf", 0.37]],
+    "mfj_ltcg": [[94050, 0.0], [583750, 0.15], ["inf", 0.20]],
+    "single_ltcg": [[47025, 0.0], [518900, 0.15], ["inf", 0.20]],
+    "hoh_ltcg": [[63000, 0.0], [551350, 0.15], ["inf", 0.20]]
+  },
+  "amt": {
+    "exemption_mfj": 126500,
+    "exemption_single": 85700,
+    "exemption_mfs": 43350,
+    "phaseout_start_mfj": 1218700,
+    "phaseout_start_single": 609350,
+    "bracket_26_mfj": 232600,
+    "bracket_26_single": 116300
+  }
+}

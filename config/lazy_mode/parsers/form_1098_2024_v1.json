@@ -1,0 +1,15 @@
+{
+  "parser_id": "form_1098",
+  "config_version": "2024_v1",
+  "description": "IRS Form 1098 Mortgage Interest Statement",
+  "boxes": {
+    "1": "mortgage_interest",
+    "2": "outstanding_principal",
+    "5": "mortgage_insurance_premiums"
+  },
+  "field_map": {
+    "itemized_mortgage_interest": "box_1",
+    "mortgage_annual": "monthly_payment_x12_when_present"
+  },
+  "notes": "Box 1 → Schedule A mortgage interest. Monthly payment is not on the 1098 itself — if the PDF includes a payment coupon/statement page, we also map payment × 12 to mortgage_annual."
+}

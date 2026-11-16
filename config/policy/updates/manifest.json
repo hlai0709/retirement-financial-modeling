@@ -1,0 +1,29 @@
+{
+  "version": 1,
+  "default_year": 2025,
+  "auto_pull": true,
+  "auto_pull_max_age_days": 30,
+  "llm_fallback": true,
+  "years": [
+    {
+      "tax_year": 2024,
+      "source": "IRS Rev. Proc. 2023-34 (embedded baseline)",
+      "file": "official/2024.json"
+    },
+    {
+      "tax_year": 2025,
+      "source": "IRS Rev. Proc. 2024-40",
+      "file": "official/2025.json",
+      "irs_url": "https://www.irs.gov/pub/irs-drop/rp-24-40.pdf",
+      "newsroom_url": "https://www.irs.gov/newsroom/irs-releases-tax-inflation-adjustments-for-tax-year-2025"
+    },
+    {
+      "tax_year": 2026,
+      "source": "IRS Rev. Proc. 2025-32",
+      "file": "official/2026.json",
+      "irs_url": "https://www.irs.gov/pub/irs-drop/rp-25-32.pdf",
+      "newsroom_url": "https://www.irs.gov/newsroom/irs-releases-tax-inflation-adjustments-for-tax-year-2026-including-amendments-from-the-one-big-beautiful-bill"
+    }
+  ],
+  "notes": "Run: python tools/fetch_policy_tables.py --activate 2025"
+}

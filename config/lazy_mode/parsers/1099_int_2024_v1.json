@@ -1,0 +1,6 @@
+{
+  "parser_id": "1099_int",
+  "config_version": "2024_v1",
+  "description": "1099-INT interest — primarily cross-check; local AI may map nothing until field exists",
+  "field_map": {}
+}

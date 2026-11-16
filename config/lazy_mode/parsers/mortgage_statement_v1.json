@@ -1,0 +1,11 @@
+{
+  "parser_id": "mortgage_statement",
+  "config_version": "1",
+  "description": "Lender mortgage or HELOC statement — monthly payment, YTD interest, maturity",
+  "field_map": {
+    "mortgage_annual": "monthly_payment_x12",
+    "mortgage_payoff_year": "maturity_or_payoff_year",
+    "itemized_mortgage_interest": "ytd_or_annual_interest"
+  },
+  "notes": "Prefer this over Form 1098 for full P&I payment. 1040/Schedule A remains the primary source for deducted interest when present."
+}

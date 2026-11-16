@@ -1,0 +1,212 @@
+{
+  "version": 1,
+  "sections": [
+    {
+      "id": "welcome",
+      "journey": "Get started",
+      "title": "AI Mode — documents first, fewer questions",
+      "intro": "Upload the same papers a CPA would ask for (1040, W-2, statements). Local AI and parsers extract your income, taxes, and more. You only answer what documents can't provide. Market assumptions can still use AI Estimates later.",
+      "where_to_get": [
+        {
+          "h": "What stays private",
+          "p": "Personal PDFs are parsed on this Mac with local Ollama (when available). Nothing from those files is uploaded for extraction."
+        },
+        {
+          "h": "What AI Estimates is for",
+          "p": "After documents, Estimates helps with non-personal assumptions (inflation, returns, some healthcare defaults)—not for reading your tax PDFs."
+        }
+      ],
+      "document_ids": [],
+      "optional": false,
+      "skip_label": null
+    },
+    {
+      "id": "connect",
+      "journey": "Connect",
+      "title": "Link your bank & investment accounts",
+      "intro": "The fastest way to fill in balances is a secure read-only connection. Same login you use on Chase.com, Fidelity.com, etc. — we never see your password.",
+      "where_to_get": [
+        {
+          "h": "Where to connect",
+          "p": "Use the same username and password as your bank or brokerage website or mobile app."
+        },
+        {
+          "h": "What we pull",
+          "p": "Current checking, savings, credit card, and investment balances — used for starting assets in your plan."
+        },
+        {
+          "h": "Don't have online access?",
+          "p": "Skip this step and upload brokerage or 401(k) statements in a later step instead."
+        }
+      ],
+      "document_ids": ["plaid_accounts"],
+      "optional": true,
+      "skip_label": "I'll upload statements instead"
+    },
+    {
+      "id": "tax_income",
+      "journey": "Income & taxes",
+      "title": "Your tax return (income + taxes)",
+      "intro": "Upload your most recent Form 1040. It fills in wages (line 1z), filing status, deductions, state, pension, rental income, and more — one document for income and taxes.",
+      "where_to_get": [
+        {
+          "h": "TurboTax / H&R Block / FreeTaxUSA",
+          "p": "Open last year's return and export or print to PDF — include all pages if you itemize (Schedule A, Schedule E)."
+        },
+        {
+          "h": "From your CPA",
+          "p": "Ask for a PDF copy of the filed return (all schedules)."
+        },
+        {
+          "h": "After upload",
+          "p": "You'll review each field before it's applied, then see a summary of what was imported so you can confirm it looks right."
+        }
+      ],
+      "document_ids": ["form_1040", "w2", "pay_stub", "1099_r"],
+      "optional": false,
+      "skip_label": null
+    },
+    {
+      "id": "spending",
+      "journey": "Spending",
+      "title": "How much you spend each year",
+      "intro": "Refresh expenses from Plaid (cards + checking), then open the Spending builder to break retirement costs into categories — rent, mortgage, food, healthcare, and more. We’ll pre-fill what we can. Upload a mortgage statement or Form 1098 for payment and payoff year (1040 only has interest for taxes).",
+      "where_to_get": [
+        {
+          "h": "Already connected Plaid?",
+          "p": "Click Refresh expenses — we annualize card and checking history. Credit cards count as spending (not assets)."
+        },
+        {
+          "h": "Mortgage / HELOC",
+          "p": "Upload a recent lender statement (balance, monthly payment, interest rate). We compute maturity year from those and keep the payment in expenses until that year — including after you retire — then living costs drop by the mortgage amount. Form 1098 covers deducted interest for taxes."
+        },
+        {
+          "h": "Property tax bills",
+          "p": "Upload each county/city tax bill (multiple properties OK — we sum them). This is cash-flow spending. Your 1040 Schedule A SALT is separate for tax modeling and may be capped."
+        },
+        {
+          "h": "Spending builder",
+          "p": "Open Spending builder to enter or adjust categories. Mortgage is tracked separately until payoff year; everything else rolls into Base Expenses."
+        },
+        {
+          "h": "No Plaid?",
+          "p": "Skip refresh and use Spending builder (or Guided) to enter categories manually."
+        }
+      ],
+      "document_ids": ["plaid_spending", "mortgage_statement", "form_1098", "property_tax_bill"],
+      "optional": true,
+      "skip_label": "Skip spending for now"
+    },
+    {
+      "id": "retirement_accounts",
+      "journey": "What you own",
+      "title": "401(k), IRA & brokerage statements",
+      "intro": "Optional but helpful — confirms retirement account balances Plaid might not fully capture.",
+      "where_to_get": [
+        {
+          "h": "401(k) / 403(b)",
+          "p": "Latest quarterly statement from Fidelity NetBenefits, Vanguard, Empower, etc. — PDF from the provider website."
+        },
+        {
+          "h": "IRA / Roth IRA",
+          "p": "Most recent statement from the custodian (Fidelity, Schwab, Vanguard)."
+        },
+        {
+          "h": "Taxable brokerage",
+          "p": "Monthly or quarterly statement showing total account value."
+        }
+      ],
+      "document_ids": ["401k_statement", "brokerage_statement"],
+      "optional": true,
+      "skip_label": "Plaid already has this"
+    },
+    {
+      "id": "social_security",
+      "journey": "Benefits",
+      "title": "Social Security statement",
+      "intro": "Add file(s) → Extract → Apply. We read the monthly benefit chart (or SSA-1099) and fill your plan’s SS fields. Tag You or Spouse on a joint plan.",
+      "where_to_get": [
+        {
+          "h": "my Social Security (best)",
+          "p": "ssa.gov → my Social Security → download your statement PDF. Prefer the official digital PDF (not a photo of a printout)."
+        },
+        {
+          "h": "What we fill",
+          "p": "SS benefit mode (PIA), monthly amount at full retirement age, annual SS amount (monthly × 12), and SS start age (usually FRA)."
+        },
+        {
+          "h": "SSA-1099",
+          "p": "If you already receive benefits, the January SSA-1099 works too (net benefits paid)."
+        },
+        {
+          "h": "Joint household",
+          "p": "Upload each spouse’s statement separately and tag Spouse on the second file before Extract."
+        }
+      ],
+      "document_ids": ["ssa_1099"],
+      "optional": true,
+      "skip_label": "Skip for now"
+    },
+    {
+      "id": "economy",
+      "journey": "Economy",
+      "title": "Inflation & investment returns",
+      "intro": "No documents needed — we refresh public market data for planning assumptions.",
+      "where_to_get": [
+        {
+          "h": "Automatic",
+          "p": "Click Refresh market to pull current inflation and return assumptions from FRED and market data."
+        }
+      ],
+      "document_ids": ["market_data"],
+      "optional": false,
+      "skip_label": null
+    },
+    {
+      "id": "wrap_up",
+      "journey": "Finish up",
+      "title": "Anything documents couldn't answer",
+      "intro": "Retirement age, life expectancy, and some healthcare choices usually aren't on tax forms. Enter them in Guided, or continue and use AI Estimates for non-personal assumptions.",
+      "where_to_get": [
+        {
+          "h": "User-specific gaps",
+          "p": "Open Guided for remaining personal facts (age targets, healthcare choices)."
+        },
+        {
+          "h": "AI Estimates",
+          "p": "On the next step / Guided AI screen: fill inflation, returns, and other defaults that aren't on your 1040."
+        }
+      ],
+      "document_ids": ["manual_gaps"],
+      "optional": true,
+      "skip_label": null
+    },
+    {
+      "id": "ai_estimates",
+      "journey": "Estimates",
+      "title": "AI Estimates (non-personal assumptions)",
+      "intro": "Optional: fill market and healthcare defaults that aren't on your tax documents. This uses your configured estimate provider (settings) — not for parsing personal PDFs. Personal docs stay local-only on upload steps.",
+      "where_to_get": [
+        {
+          "h": "What this is for",
+          "p": "Inflation, investment returns, and similar assumptions. User income/assets should already come from documents above."
+        }
+      ],
+      "document_ids": [],
+      "optional": true,
+      "layout": "ai_estimates",
+      "skip_label": "Skip estimates for now"
+    },
+    {
+      "id": "review",
+      "journey": "Review",
+      "title": "Review what you've provided",
+      "intro": "Summary of documents and plan completeness. Switch to Guided to fine-tune gaps, or run your plan when ready.",
+      "where_to_get": [],
+      "document_ids": [],
+      "optional": false,
+      "layout": "review",
+      "skip_label": null
+    }
+  ]
+}

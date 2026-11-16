@@ -1,0 +1,170 @@
+{
+  "tax_year": 2026,
+  "source": "IRS Rev. Proc. 2025-32 (rp-25-32)",
+  "fetched_at": "2026-06-22T00:48:03+00:00",
+  "fetch_method": "irs_newsroom_html",
+  "fetch_notes": "Federal ordinary brackets and standard deductions parsed from IRS newsroom. HOH brackets, LTCG tiers, SS thresholds, Medicare, and FPL scaled from prior tax year.",
+  "scalars": {
+    "mfj_standard_deduction": 32200,
+    "single_standard_deduction": 16100,
+    "hoh_standard_deduction": 24150,
+    "mfj_ss_base": 35288,
+    "mfj_ss_tier2": 48520,
+    "single_ss_base": 27569,
+    "single_ss_tier2": 37494,
+    "fpl_base": 16608,
+    "fpl_per_additional_person": 5932,
+    "medicare_part_b_monthly": 192.65,
+    "medicare_part_d_monthly": 61.2,
+    "mfj_additional_sd_65": 1709,
+    "single_additional_sd_65": 2150,
+    "niit_mfj_threshold": 275685,
+    "niit_single_threshold": 220547,
+    "niit_mfs_threshold": 137843
+  },
+  "brackets": {
+    "single": [
+      [
+        12400.0,
+        0.1
+      ],
+      [
+        12400.0,
+        0.12
+      ],
+      [
+        50400.0,
+        0.22
+      ],
+      [
+        105700.0,
+        0.24
+      ],
+      [
+        201775.0,
+        0.32
+      ],
+      [
+        256225.0,
+        0.35
+      ],
+      [
+        "inf",
+        0.37
+      ]
+    ],
+    "mfj": [
+      [
+        24800.0,
+        0.1
+      ],
+      [
+        24800.0,
+        0.12
+      ],
+      [
+        100800.0,
+        0.22
+      ],
+      [
+        211400.0,
+        0.24
+      ],
+      [
+        403550.0,
+        0.32
+      ],
+      [
+        512450.0,
+        0.35
+      ],
+      [
+        "inf",
+        0.37
+      ]
+    ],
+    "hoh": [
+      [
+        19188,
+        0.1
+      ],
+      [
+        73002,
+        0.12
+      ],
+      [
+        116394,
+        0.22
+      ],
+      [
+        221706,
+        0.24
+      ],
+      [
+        268738,
+        0.32
+      ],
+      [
+        671955,
+        0.35
+      ],
+      [
+        "inf",
+        0.37
+      ]
+    ],
+    "single_ltcg": [
+      [
+        51856,
+        0.0
+      ],
+      [
+        572211,
+        0.15
+      ],
+      [
+        "inf",
+        0.2
+      ]
+    ],
+    "mfj_ltcg": [
+      [
+        103713,
+        0.0
+      ],
+      [
+        643724,
+        0.15
+      ],
+      [
+        "inf",
+        0.2
+      ]
+    ],
+    "hoh_ltcg": [
+      [
+        69473,
+        0.0
+      ],
+      [
+        607995,
+        0.15
+      ],
+      [
+        "inf",
+        0.2
+      ]
+    ]
+  },
+  "amt": {
+    "exemption_mfj": 140200,
+    "exemption_single": 90100,
+    "exemption_mfs": 70100,
+    "phaseout_start_mfj": 1000000,
+    "phaseout_start_single": 500000,
+    "bracket_26_mfj": 232600,
+    "bracket_26_single": 116300,
+    "phaseout_start_mfs": 500000
+  },
+  "newsroom_url": "https://www.irs.gov/newsroom/irs-releases-tax-inflation-adjustments-for-tax-year-2026-including-amendments-from-the-one-big-beautiful-bill"
+}

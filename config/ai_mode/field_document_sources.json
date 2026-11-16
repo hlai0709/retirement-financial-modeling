@@ -1,0 +1,172 @@
+{
+  "version": 1,
+  "description": "User-specific planning fields and preferred document sources for AI Mode. Judgment/market fields use estimates or Guided.",
+  "user_fact_fields": [
+    {
+      "field_key": "state_of_residence",
+      "scope": "shared",
+      "documents": ["form_1040"],
+      "notes": "1040 address state or state return"
+    },
+    {
+      "field_key": "filing_status_after_marriage",
+      "scope": "shared",
+      "documents": ["form_1040"],
+      "notes": "1040 filing status checkboxes"
+    },
+    {
+      "field_key": "current_age",
+      "scope": "person",
+      "documents": ["form_1040", "w2", "drivers_license"],
+      "notes": "Often derived from birth year; may need manual"
+    },
+    {
+      "field_key": "birth_year",
+      "scope": "person",
+      "documents": ["form_1040", "ssa_1099", "drivers_license"],
+      "notes": "SSA statement or ID; 1040 rarely shows full DOB"
+    },
+    {
+      "field_key": "annual_earned_income",
+      "scope": "person",
+      "documents": ["w2", "form_1040", "pay_stub"],
+      "notes": "W-2 box 1 preferred; 1040 line 1z combined"
+    },
+    {
+      "field_key": "annual_contributions",
+      "scope": "person",
+      "documents": ["pay_stub", "w2", "401k_statement"],
+      "notes": "YTD 401k deferrals annualized from stub"
+    },
+    {
+      "field_key": "contribution_roth_pct",
+      "scope": "shared",
+      "documents": ["pay_stub"],
+      "notes": "Roth vs traditional split on stub"
+    },
+    {
+      "field_key": "initial_assets",
+      "scope": "person",
+      "documents": ["plaid_accounts", "brokerage_statement", "401k_statement"],
+      "notes": "Plaid total or sum of statements"
+    },
+    {
+      "field_key": "initial_taxable_assets",
+      "scope": "person",
+      "documents": ["brokerage_statement", "plaid_accounts"]
+    },
+    {
+      "field_key": "initial_traditional_ira",
+      "scope": "person",
+      "documents": ["401k_statement", "brokerage_statement"]
+    },
+    {
+      "field_key": "initial_roth_ira",
+      "scope": "person",
+      "documents": ["401k_statement", "brokerage_statement"]
+    },
+    {
+      "field_key": "base_expenses",
+      "scope": "person",
+      "documents": ["plaid_spending"],
+      "notes": "Annualized from Plaid; optional budget PDF later"
+    },
+    {
+      "field_key": "itemized_salt_annual",
+      "scope": "shared",
+      "documents": ["form_1040", "property_tax_bill"]
+    },
+    {
+      "field_key": "property_tax_annual",
+      "scope": "person",
+      "documents": ["property_tax_bill", "form_1040"]
+    },
+    {
+      "field_key": "itemized_mortgage_interest",
+      "scope": "shared",
+      "documents": ["form_1040", "form_1098", "mortgage_statement"]
+    },
+    {
+      "field_key": "itemized_charitable",
+      "scope": "shared",
+      "documents": ["form_1040"]
+    },
+    {
+      "field_key": "itemized_medical",
+      "scope": "shared",
+      "documents": ["form_1040"]
+    },
+    {
+      "field_key": "mortgage_annual",
+      "scope": "person",
+      "documents": ["mortgage_statement", "form_1098"]
+    },
+    {
+      "field_key": "mortgage_payoff_year",
+      "scope": "person",
+      "documents": ["mortgage_statement", "form_1098"]
+    },
+    {
+      "field_key": "rental_income_start",
+      "scope": "person",
+      "documents": ["form_1040"]
+    },
+    {
+      "field_key": "pension_amount",
+      "scope": "person",
+      "documents": ["form_1040", "1099_r"]
+    },
+    {
+      "field_key": "ss_amount",
+      "scope": "person",
+      "documents": ["ssa_1099", "form_1040"]
+    },
+    {
+      "field_key": "ss_pia_monthly",
+      "scope": "person",
+      "documents": ["ssa_1099"]
+    },
+    {
+      "field_key": "ss_aime",
+      "scope": "person",
+      "documents": ["ssa_1099"]
+    },
+    {
+      "field_key": "pre_retire_tax_rate",
+      "scope": "shared",
+      "documents": ["form_1040"],
+      "notes": "Derived tax/AGI when possible"
+    },
+    {
+      "field_key": "health_insurance_pre_medicare",
+      "scope": "person",
+      "documents": ["pay_stub", "health_premium_bill"]
+    }
+  ],
+  "estimate_or_manual_fields": [
+    "retirement_age",
+    "life_expectancy",
+    "inflation_rate",
+    "investment_return_mean",
+    "expense_go_go_pct",
+    "expense_slow_go_pct",
+    "expense_no_go_pct",
+    "roth_conversion_mode",
+    "aca_benchmark_monthly_age_21",
+    "ltc_inflation_rate",
+    "post_retire_tax_rate"
+  ],
+  "upload_order": [
+    "plaid_accounts",
+    "plaid_spending",
+    "form_1040",
+    "w2",
+    "pay_stub",
+    "401k_statement",
+    "brokerage_statement",
+    "ssa_1099",
+    "market_data",
+    "manual_gaps",
+    "ai_estimates"
+  ]
+}

@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Expert — Simulate · Liquid Glass</title>
+  <link rel="stylesheet" href="liquid-glass.css" />
+  <style>
+    .select-wrap::after {
+      content: "";
+      position: absolute; right: 14px; top: 50%;
+      transform: translateY(-50%);
+      border-left: 4px solid transparent;
+      border-right: 4px solid transparent;
+      border-top: 5px solid rgba(255,255,255,0.5);
+      pointer-events: none;
+    }
+    .glass-input.year { width: 88px; }
+</style>
+</head>
+<body class="screen-body">
+  <div class="banner">Expert · Simulate · <a href="expert-04-live-data-liquid-glass.html">← Live Data</a> <a href="expert-06-settings-liquid-glass.html">Settings →</a>
+    <a href="expert-all-screens.html">All sections</a>
+    <a href="index.html">Index</a></div>
+
+  <div class="window expert-window">
+    <header class="header liquid">
+      <div class="header-left">
+        <span class="app-name">Retirement Planner</span>
+        <div class="pill-toggle">
+          <button type="button">Guided</button>
+          <button type="button" class="on">Expert</button>
+        </div>
+      </div>
+      <span class="build">UI Jun 23 · liquid glass</span>
+    </header>
+
+    <div class="expert-body">
+      <nav class="section-rail liquid" aria-label="Sections">
+        <span class="rail-label">Sections</span><button type="button" class="rail-link">Setup</button><button type="button" class="rail-link">Assumptions</button><button type="button" class="rail-link">AI Assistant</button><button type="button" class="rail-link">Live Data</button><button type="button" class="rail-link on">Simulate</button><button type="button" class="rail-link">Settings</button>
+      </nav>
+      <main class="expert-main">
+        <div class="expert-main-head">
+          <div>
+            <h1 class="expert-title">Simulation</h1>
+            <p class="expert-subtitle">Run options and Monte Carlo settings</p>
+          </div>
+          <button type="button" class="link-guided">Jump to Guided →</button>
+        </div>
+        <div class="content-glass liquid liquid-strong" style="max-width:none">
+          <div class="glass-inner">
+            <p class="field-label" style="margin-bottom:10px">Simulation mode</p>
+            <div class="radio-row" style="margin-bottom:18px"><div class="radio-pill">Deterministic</div><div class="radio-pill">Monte Carlo</div><div class="radio-pill on">Both</div></div>
+            <p class="field-label" style="margin-bottom:10px">Planning precision</p>
+            <div class="radio-row" style="margin-bottom:18px"><div class="radio-pill on">Standard</div><div class="radio-pill">CPA Precision</div></div>
+            <div class="sim-grid"><span class="field-label">MC paths</span><input class="glass-input narrow" type="text" value="1000" readonly /><span class="field-label">Stock allocation %</span><input class="glass-input narrow" type="text" value="70" readonly /><span class="field-label">Risk tolerance</span><div class="select-wrap"><select class="state-select"><option>conservative</option><option selected>moderate</option><option>aggressive</option></select></div></div>
+            <div style="margin-top:18px"><button type="button" class="connect-btn">Validate Tax Return</button><button type="button" class="connect-btn">Export Assumptions CSV</button></div>
+          </div>
+        </div>
+      </main>
+    </div>
+
+    <div class="status-dock liquid">
+      <div class="status-copy">
+        <h2>Expert editor</h2>
+        <p>Simulate</p>
+      </div>
+      <button type="button" class="btn btn-run">Run plan</button>
+    </div>
+  </div>
+</body>
+</html>

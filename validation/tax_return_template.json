@@ -1,0 +1,42 @@
+{
+  "schema_version": 1,
+  "label": "Example — replace with your return",
+  "tax_year": 2024,
+  "filing_status": "mfj",
+  "state_of_residence": "CA",
+  "planning_precision": "standard",
+  "seniors_65_count": 0,
+  "tax_mode": "federal_brackets",
+  "state_tax_enabled": true,
+  "state_tax_override_pct": null,
+  "income": {
+    "wages": 0,
+    "taxable_interest": 0,
+    "ordinary_dividends": 0,
+    "ira_distributions": 0,
+    "pension": 0,
+    "social_security_gross": 0,
+    "capital_gain": 0,
+    "rental_income": 0
+  },
+  "itemized": {
+    "salt": 0,
+    "mortgage_interest": 0,
+    "charitable": 0,
+    "medical": 0
+  },
+  "form_1040": {
+    "agi": 0,
+    "taxable_income": 0,
+    "income_tax": 0,
+    "total_tax": 0,
+    "state_income_tax": null
+  },
+  "tolerance": {
+    "federal_tax": 75,
+    "state_tax": 100,
+    "agi": 5,
+    "taxable_income": 5
+  },
+  "notes": "Map Form 1040 lines: wages→1z, interest→2b, dividends→3b, IRA→4b, pension→5b, SS→6b, cap gain→7, AGI→11, taxable income→15, income tax→16, total tax→24. Activate matching tax year first: python tools/fetch_policy_tables.py --activate TAX_YEAR"
+}

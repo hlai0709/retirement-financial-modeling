@@ -1,0 +1,1326 @@
+{
+  "version": 1,
+  "base_year": 2024,
+  "description": "Golden-file tax scenarios for annual regression validation",
+  "scenario_count": 79,
+  "scenarios": [
+    {
+      "id": "ss_mfj_none",
+      "category": "social_security",
+      "type": "ss_taxable",
+      "inputs": {
+        "ss_gross": 30000,
+        "other_income": 10000,
+        "filing_status": "mfj",
+        "inflation_factor": 1.0,
+        "mfs_lived_apart": false
+      },
+      "expect": 0.0,
+      "tolerance": 0.5
+    },
+    {
+      "id": "ss_mfj_mid_tier",
+      "category": "social_security",
+      "type": "ss_taxable",
+      "inputs": {
+        "ss_gross": 30000,
+        "other_income": 22000,
+        "filing_status": "mfj",
+        "inflation_factor": 1.0,
+        "mfs_lived_apart": false
+      },
+      "expect": 2500.0,
+      "tolerance": 0.5
+    },
+    {
+      "id": "ss_mfj_high_tier",
+      "category": "social_security",
+      "type": "ss_taxable",
+      "inputs": {
+        "ss_gross": 30000,
+        "other_income": 30000,
+        "filing_status": "mfj",
+        "inflation_factor": 1.0,
+        "mfs_lived_apart": false
+      },
+      "expect": 6850.0,
+      "tolerance": 0.5
+    },
+    {
+      "id": "ss_single_none",
+      "category": "social_security",
+      "type": "ss_taxable",
+      "inputs": {
+        "ss_gross": 20000,
+        "other_income": 15000,
+        "filing_status": "single",
+        "inflation_factor": 1.0,
+        "mfs_lived_apart": false
+      },
+      "expect": 0.0,
+      "tolerance": 0.5
+    },
+    {
+      "id": "ss_single_mid",
+      "category": "social_security",
+      "type": "ss_taxable",
+      "inputs": {
+        "ss_gross": 24000,
+        "other_income": 18000,
+        "filing_status": "single",
+        "inflation_factor": 1.0,
+        "mfs_lived_apart": false
+      },
+      "expect": 2500.0,
+      "tolerance": 0.5
+    },
+    {
+      "id": "ss_mfs_lived_apart_none",
+      "category": "social_security",
+      "type": "ss_taxable",
+      "inputs": {
+        "ss_gross": 18000,
+        "other_income": 12000,
+        "filing_status": "mfs",
+        "inflation_factor": 1.0,
+        "mfs_lived_apart": true
+      },
+      "expect": 0.0,
+      "tolerance": 0.5
+    },
+    {
+      "id": "ss_inflation_scaled",
+      "category": "social_security",
+      "type": "ss_taxable",
+      "inputs": {
+        "ss_gross": 30000,
+        "other_income": 22000,
+        "filing_status": "mfj",
+        "inflation_factor": 1.05,
+        "mfs_lived_apart": false
+      },
+      "expect": 1700.0,
+      "tolerance": 0.5
+    },
+    {
+      "id": "fed_mfj_50k",
+      "category": "federal_brackets",
+      "type": "federal_income_tax",
+      "inputs": {
+        "filing_status": "mfj",
+        "taxable_income": 50000,
+        "seniors_65_count": 0,
+        "inflation_factor": 1.0
+      },
+      "expect": 2080.0,
+      "tolerance": 1.0
+    },
+    {
+      "id": "fed_mfj_100k",
+      "category": "federal_brackets",
+      "type": "federal_income_tax",
+      "inputs": {
+        "filing_status": "mfj",
+        "taxable_income": 100000,
+        "seniors_65_count": 0,
+        "inflation_factor": 1.0
+      },
+      "expect": 8032.0,
+      "tolerance": 1.0
+    },
+    {
+      "id": "fed_mfj_200k",
+      "category": "federal_brackets",
+      "type": "federal_income_tax",
+      "inputs": {
+        "filing_status": "mfj",
+        "taxable_income": 200000,
+        "seniors_65_count": 0,
+        "inflation_factor": 1.0
+      },
+      "expect": 27682.0,
+      "tolerance": 1.0
+    },
+    {
+      "id": "fed_single_60k",
+      "category": "federal_brackets",
+      "type": "federal_income_tax",
+      "inputs": {
+        "filing_status": "single",
+        "taxable_income": 60000,
+        "seniors_65_count": 0,
+        "inflation_factor": 1.0
+      },
+      "expect": 5216.0,
+      "tolerance": 1.0
+    },
+    {
+      "id": "fed_single_150k",
+      "category": "federal_brackets",
+      "type": "federal_income_tax",
+      "inputs": {
+        "filing_status": "single",
+        "taxable_income": 150000,
+        "seniors_65_count": 0,
+        "inflation_factor": 1.0
+      },
+      "expect": 25538.5,
+      "tolerance": 1.0
+    },
+    {
+      "id": "fed_hoh_80k",
+      "category": "federal_brackets",
+      "type": "federal_income_tax",
+      "inputs": {
+        "filing_status": "head_of_household",
+        "taxable_income": 80000,
+        "seniors_65_count": 0,
+        "inflation_factor": 1.0
+      },
+      "expect": 6624.0,
+      "tolerance": 1.0
+    },
+    {
+      "id": "fed_mfj_senior_sd",
+      "category": "federal_brackets",
+      "type": "federal_income_tax",
+      "inputs": {
+        "filing_status": "mfj",
+        "taxable_income": 90000,
+        "seniors_65_count": 2,
+        "inflation_factor": 1.0
+      },
+      "expect": 6460.0,
+      "tolerance": 1.0
+    },
+    {
+      "id": "fed_single_senior_sd",
+      "category": "federal_brackets",
+      "type": "federal_income_tax",
+      "inputs": {
+        "filing_status": "single",
+        "taxable_income": 70000,
+        "seniors_65_count": 1,
+        "inflation_factor": 1.0
+      },
+      "expect": 6812.0,
+      "tolerance": 1.0
+    },
+    {
+      "id": "ret_mfj_moderate",
+      "category": "retirement_tax",
+      "type": "federal_retirement_tax",
+      "inputs": {
+        "ss_gross": 30000,
+        "pension_gross": 20000,
+        "rental_gross": 0,
+        "earned_income": 0,
+        "withdrawal_gross": 50000,
+        "roth_fraction": 0.0,
+        "filing_status": "mfj",
+        "inflation_factor": 1.0,
+        "tax_mode": "federal_brackets",
+        "flat_rate": 0.22,
+        "state_code": "CA",
+        "state_tax_enabled": true,
+        "taxable_portfolio_fraction": 0.0,
+        "niit_enabled": true,
+        "roth_conversion": 0
+      },
+      "expect": {
+        "federal": 7492.0,
+        "state": 2332.32,
+        "ss_taxable": 25500.0
+      },
+      "tolerance": 2.0
+    },
+    {
+      "id": "ret_mfj_high_withdrawal",
+      "category": "retirement_tax",
+      "type": "federal_retirement_tax",
+      "inputs": {
+        "ss_gross": 40000,
+        "pension_gross": 30000,
+        "rental_gross": 0,
+        "earned_income": 0,
+        "withdrawal_gross": 120000,
+        "roth_fraction": 0.0,
+        "filing_status": "mfj",
+        "inflation_factor": 1.0,
+        "tax_mode": "federal_brackets",
+        "flat_rate": 0.22,
+        "state_code": "CA",
+        "state_tax_enabled": true,
+        "taxable_portfolio_fraction": 0.0,
+        "niit_enabled": true,
+        "roth_conversion": 0
+      },
+      "expect": {
+        "federal": 24162.0,
+        "state": 9420.02,
+        "ss_taxable": 34000.0
+      },
+      "tolerance": 2.0
+    },
+    {
+      "id": "ret_single_low",
+      "category": "retirement_tax",
+      "type": "federal_retirement_tax",
+      "inputs": {
+        "ss_gross": 18000,
+        "pension_gross": 0,
+        "rental_gross": 0,
+        "earned_income": 0,
+        "withdrawal_gross": 35000,
+        "roth_fraction": 0.0,
+        "filing_status": "single",
+        "inflation_factor": 1.0,
+        "tax_mode": "federal_brackets",
+        "flat_rate": 0.22,
+        "state_code": "CA",
+        "state_tax_enabled": true,
+        "taxable_portfolio_fraction": 0.0,
+        "niit_enabled": true,
+        "roth_conversion": 0
+      },
+      "expect": {
+        "federal": 3776.0,
+        "state": 1181.16,
+        "ss_taxable": 13000.0
+      },
+      "tolerance": 2.0
+    },
+    {
+      "id": "ret_mfj_roth_heavy",
+      "category": "retirement_tax",
+      "type": "federal_retirement_tax",
+      "inputs": {
+        "ss_gross": 25000,
+        "pension_gross": 0,
+        "rental_gross": 0,
+        "earned_income": 0,
+        "withdrawal_gross": 80000,
+        "roth_fraction": 0.6,
+        "filing_status": "mfj",
+        "inflation_factor": 1.0,
+        "tax_mode": "federal_brackets",
+        "flat_rate": 0.22,
+        "state_code": "CA",
+        "state_tax_enabled": true,
+        "taxable_portfolio_fraction": 0.0,
+        "niit_enabled": true,
+        "roth_conversion": 0
+      },
+      "expect": {
+        "federal": 922.5,
+        "state": 345.74,
+        "ss_taxable": 6425.0
+      },
+      "tolerance": 2.0
+    },
+    {
+      "id": "ret_mfj_rental",
+      "category": "retirement_tax",
+      "type": "federal_retirement_tax",
+      "inputs": {
+        "ss_gross": 20000,
+        "pension_gross": 0,
+        "rental_gross": 24000,
+        "earned_income": 0,
+        "withdrawal_gross": 40000,
+        "roth_fraction": 0.0,
+        "filing_status": "mfj",
+        "inflation_factor": 1.0,
+        "tax_mode": "federal_brackets",
+        "flat_rate": 0.22,
+        "state_code": "CA",
+        "state_tax_enabled": true,
+        "taxable_portfolio_fraction": 0.0,
+        "niit_enabled": true,
+        "roth_conversion": 0
+      },
+      "expect": {
+        "federal": 5752.0,
+        "state": 1614.32,
+        "ss_taxable": 17000.0
+      },
+      "tolerance": 2.0
+    },
+    {
+      "id": "ret_mfj_earned",
+      "category": "retirement_tax",
+      "type": "federal_retirement_tax",
+      "inputs": {
+        "ss_gross": 0,
+        "pension_gross": 0,
+        "rental_gross": 0,
+        "earned_income": 60000,
+        "withdrawal_gross": 10000,
+        "roth_fraction": 0.0,
+        "filing_status": "mfj",
+        "inflation_factor": 1.0,
+        "tax_mode": "federal_brackets",
+        "flat_rate": 0.22,
+        "state_code": "CA",
+        "state_tax_enabled": true,
+        "taxable_portfolio_fraction": 0.0,
+        "niit_enabled": true,
+        "roth_conversion": 0
+      },
+      "expect": {
+        "federal": 4432.0,
+        "state": 1174.32,
+        "ss_taxable": 0.0
+      },
+      "tolerance": 2.0
+    },
+    {
+      "id": "ret_ca_state",
+      "category": "retirement_tax",
+      "type": "federal_retirement_tax",
+      "inputs": {
+        "ss_gross": 30000,
+        "pension_gross": 0,
+        "rental_gross": 0,
+        "earned_income": 0,
+        "withdrawal_gross": 70000,
+        "roth_fraction": 0.0,
+        "filing_status": "mfj",
+        "inflation_factor": 1.0,
+        "tax_mode": "federal_brackets",
+        "flat_rate": 0.22,
+        "state_code": "CA",
+        "state_tax_enabled": true,
+        "taxable_portfolio_fraction": 0.0,
+        "niit_enabled": true,
+        "roth_conversion": 0
+      },
+      "expect": {
+        "federal": 7492.0,
+        "state": 2332.32,
+        "ss_taxable": 25500.0
+      },
+      "tolerance": 2.0
+    },
+    {
+      "id": "ret_tx_no_state",
+      "category": "retirement_tax",
+      "type": "federal_retirement_tax",
+      "inputs": {
+        "ss_gross": 30000,
+        "pension_gross": 0,
+        "rental_gross": 0,
+        "earned_income": 0,
+        "withdrawal_gross": 70000,
+        "roth_fraction": 0.0,
+        "filing_status": "mfj",
+        "inflation_factor": 1.0,
+        "tax_mode": "federal_brackets",
+        "flat_rate": 0.22,
+        "state_code": "TX",
+        "state_tax_enabled": true,
+        "taxable_portfolio_fraction": 0.0,
+        "niit_enabled": true,
+        "roth_conversion": 0
+      },
+      "expect": {
+        "federal": 7492.0,
+        "state": 0.0,
+        "ss_taxable": 25500.0
+      },
+      "tolerance": 2.0
+    },
+    {
+      "id": "ret_ny_state",
+      "category": "retirement_tax",
+      "type": "federal_retirement_tax",
+      "inputs": {
+        "ss_gross": 35000,
+        "pension_gross": 0,
+        "rental_gross": 0,
+        "earned_income": 0,
+        "withdrawal_gross": 90000,
+        "roth_fraction": 0.0,
+        "filing_status": "mfj",
+        "inflation_factor": 1.0,
+        "tax_mode": "federal_brackets",
+        "flat_rate": 0.22,
+        "state_code": "NY",
+        "state_tax_enabled": true,
+        "taxable_portfolio_fraction": 0.0,
+        "niit_enabled": true,
+        "roth_conversion": 0
+      },
+      "expect": {
+        "federal": 10402.0,
+        "state": 5371.0,
+        "ss_taxable": 29750.0
+      },
+      "tolerance": 2.0
+    },
+    {
+      "id": "ret_flat_mode",
+      "category": "retirement_tax",
+      "type": "federal_retirement_tax",
+      "inputs": {
+        "ss_gross": 0,
+        "pension_gross": 0,
+        "rental_gross": 0,
+        "earned_income": 0,
+        "withdrawal_gross": 80000,
+        "roth_fraction": 0.0,
+        "filing_status": "mfj",
+        "inflation_factor": 1.0,
+        "tax_mode": "flat",
+        "flat_rate": 0.22,
+        "state_code": "CA",
+        "state_tax_enabled": true,
+        "taxable_portfolio_fraction": 0.0,
+        "niit_enabled": true,
+        "roth_conversion": 0
+      },
+      "expect": {
+        "federal": 17600.0,
+        "state": 1574.32,
+        "ss_taxable": 0.0
+      },
+      "tolerance": 2.0
+    },
+    {
+      "id": "ret_niit_high",
+      "category": "retirement_tax",
+      "type": "federal_retirement_tax",
+      "inputs": {
+        "ss_gross": 0,
+        "pension_gross": 0,
+        "rental_gross": 40000,
+        "earned_income": 0,
+        "withdrawal_gross": 100000,
+        "roth_fraction": 0.0,
+        "filing_status": "mfj",
+        "inflation_factor": 1.0,
+        "tax_mode": "federal_brackets",
+        "flat_rate": 0.22,
+        "state_code": "CA",
+        "state_tax_enabled": true,
+        "taxable_portfolio_fraction": 1.0,
+        "niit_enabled": true,
+        "roth_conversion": 0
+      },
+      "expect": {
+        "federal": 9344.5,
+        "state": 5424.56,
+        "ss_taxable": 0.0
+      },
+      "tolerance": 2.0
+    },
+    {
+      "id": "ret_niit_disabled",
+      "category": "retirement_tax",
+      "type": "federal_retirement_tax",
+      "inputs": {
+        "ss_gross": 0,
+        "pension_gross": 0,
+        "rental_gross": 40000,
+        "earned_income": 0,
+        "withdrawal_gross": 100000,
+        "roth_fraction": 0.0,
+        "filing_status": "mfj",
+        "inflation_factor": 1.0,
+        "tax_mode": "federal_brackets",
+        "flat_rate": 0.22,
+        "state_code": "CA",
+        "state_tax_enabled": true,
+        "taxable_portfolio_fraction": 0.0,
+        "niit_enabled": false,
+        "roth_conversion": 0
+      },
+      "expect": {
+        "federal": 14482.0,
+        "state": 5424.56,
+        "ss_taxable": 0.0
+      },
+      "tolerance": 2.0
+    },
+    {
+      "id": "ret_ltcg_mix",
+      "category": "retirement_tax",
+      "type": "federal_retirement_tax",
+      "inputs": {
+        "ss_gross": 0,
+        "pension_gross": 0,
+        "rental_gross": 0,
+        "earned_income": 0,
+        "withdrawal_gross": 100000,
+        "roth_fraction": 0.0,
+        "filing_status": "mfj",
+        "inflation_factor": 1.0,
+        "tax_mode": "federal_brackets",
+        "flat_rate": 0.22,
+        "state_code": "CA",
+        "state_tax_enabled": true,
+        "taxable_portfolio_fraction": 0.5,
+        "niit_enabled": true,
+        "roth_conversion": 0,
+        "taxable_gain_fraction": 0.8
+      },
+      "expect": {
+        "federal": 3232.0,
+        "state": 2602.32,
+        "ss_taxable": 0.0
+      },
+      "tolerance": 2.0
+    },
+    {
+      "id": "ret_roth_conversion",
+      "category": "retirement_tax",
+      "type": "federal_retirement_tax",
+      "inputs": {
+        "ss_gross": 0,
+        "pension_gross": 0,
+        "rental_gross": 0,
+        "earned_income": 0,
+        "withdrawal_gross": 40000,
+        "roth_fraction": 0.0,
+        "filing_status": "mfj",
+        "inflation_factor": 1.0,
+        "tax_mode": "federal_brackets",
+        "flat_rate": 0.22,
+        "state_code": "CA",
+        "state_tax_enabled": true,
+        "taxable_portfolio_fraction": 0.0,
+        "niit_enabled": true,
+        "roth_conversion": 25000
+      },
+      "expect": {
+        "federal": 3832.0,
+        "state": 974.32,
+        "ss_taxable": 0.0
+      },
+      "tolerance": 2.0
+    },
+    {
+      "id": "ret_mfs",
+      "category": "retirement_tax",
+      "type": "federal_retirement_tax",
+      "inputs": {
+        "ss_gross": 15000,
+        "pension_gross": 0,
+        "rental_gross": 0,
+        "earned_income": 0,
+        "withdrawal_gross": 45000,
+        "roth_fraction": 0.0,
+        "filing_status": "mfs",
+        "inflation_factor": 1.0,
+        "tax_mode": "federal_brackets",
+        "flat_rate": 0.22,
+        "state_code": "CA",
+        "state_tax_enabled": true,
+        "taxable_portfolio_fraction": 0.0,
+        "niit_enabled": true,
+        "roth_conversion": 0
+      },
+      "expect": {
+        "federal": 4946.0,
+        "state": 1766.16,
+        "ss_taxable": 12750.0
+      },
+      "tolerance": 2.0
+    },
+    {
+      "id": "ltcg_mfj_ordinary_only",
+      "category": "ltcg",
+      "type": "ltcg_tax",
+      "inputs": {
+        "filing_status": "mfj",
+        "ordinary_income": 80000,
+        "ltcg": 0,
+        "inflation_factor": 1.0
+      },
+      "expect": {
+        "total": 5632.0,
+        "ordinary": 5632.0,
+        "ltcg": 0.0
+      },
+      "tolerance": 1.0
+    },
+    {
+      "id": "ltcg_mfj_with_gains",
+      "category": "ltcg",
+      "type": "ltcg_tax",
+      "inputs": {
+        "filing_status": "mfj",
+        "ordinary_income": 60000,
+        "ltcg": 40000,
+        "inflation_factor": 1.0
+      },
+      "expect": {
+        "total": 3232.0,
+        "ordinary": 3232.0,
+        "ltcg": 0.0
+      },
+      "tolerance": 1.0
+    },
+    {
+      "id": "ltcg_single_stack",
+      "category": "ltcg",
+      "type": "ltcg_tax",
+      "inputs": {
+        "filing_status": "single",
+        "ordinary_income": 45000,
+        "ltcg": 30000,
+        "inflation_factor": 1.0
+      },
+      "expect": {
+        "total": 5422.25,
+        "ordinary": 3416.0,
+        "ltcg": 2006.25
+      },
+      "tolerance": 1.0
+    },
+    {
+      "id": "ltcg_hoh",
+      "category": "ltcg",
+      "type": "ltcg_tax",
+      "inputs": {
+        "filing_status": "head_of_household",
+        "ordinary_income": 50000,
+        "ltcg": 25000,
+        "inflation_factor": 1.0
+      },
+      "expect": {
+        "total": 3024.0,
+        "ordinary": 3024.0,
+        "ltcg": 0.0
+      },
+      "tolerance": 1.0
+    },
+    {
+      "id": "niit_mfj_below",
+      "category": "niit",
+      "type": "niit",
+      "inputs": {
+        "magi": 240000,
+        "net_investment_income": 20000,
+        "filing_status": "mfj"
+      },
+      "expect": 0.0,
+      "tolerance": 0.5
+    },
+    {
+      "id": "niit_mfj_above",
+      "category": "niit",
+      "type": "niit",
+      "inputs": {
+        "magi": 320000,
+        "net_investment_income": 50000,
+        "filing_status": "mfj"
+      },
+      "expect": 1900.0,
+      "tolerance": 0.5
+    },
+    {
+      "id": "niit_single_above",
+      "category": "niit",
+      "type": "niit",
+      "inputs": {
+        "magi": 260000,
+        "net_investment_income": 40000,
+        "filing_status": "single"
+      },
+      "expect": 1520.0,
+      "tolerance": 0.5
+    },
+    {
+      "id": "niit_mfs_above",
+      "category": "niit",
+      "type": "niit",
+      "inputs": {
+        "magi": 180000,
+        "net_investment_income": 30000,
+        "filing_status": "mfs"
+      },
+      "expect": 1140.0,
+      "tolerance": 0.5
+    },
+    {
+      "id": "state_ca_moderate",
+      "category": "state_tax",
+      "type": "state_tax",
+      "inputs": {
+        "state_code": "CA",
+        "gross_taxable": 80000,
+        "ss_taxable": 5000,
+        "filing_status": "mfj",
+        "inflation_factor": 1.0
+      },
+      "expect": 1574.32,
+      "tolerance": 2.0
+    },
+    {
+      "id": "state_ca_high",
+      "category": "state_tax",
+      "type": "state_tax",
+      "inputs": {
+        "state_code": "CA",
+        "gross_taxable": 200000,
+        "ss_taxable": 12000,
+        "filing_status": "mfj",
+        "inflation_factor": 1.0
+      },
+      "expect": 10908.02,
+      "tolerance": 2.0
+    },
+    {
+      "id": "state_tx_zero",
+      "category": "state_tax",
+      "type": "state_tax",
+      "inputs": {
+        "state_code": "TX",
+        "gross_taxable": 120000,
+        "ss_taxable": 0,
+        "filing_status": "mfj",
+        "inflation_factor": 1.0
+      },
+      "expect": 0.0,
+      "tolerance": 2.0
+    },
+    {
+      "id": "state_fl_zero",
+      "category": "state_tax",
+      "type": "state_tax",
+      "inputs": {
+        "state_code": "FL",
+        "gross_taxable": 120000,
+        "ss_taxable": 0,
+        "filing_status": "mfj",
+        "inflation_factor": 1.0
+      },
+      "expect": 0.0,
+      "tolerance": 2.0
+    },
+    {
+      "id": "state_ny_moderate",
+      "category": "state_tax",
+      "type": "state_tax",
+      "inputs": {
+        "state_code": "NY",
+        "gross_taxable": 90000,
+        "ss_taxable": 4000,
+        "filing_status": "mfj",
+        "inflation_factor": 1.0
+      },
+      "expect": 3734.75,
+      "tolerance": 2.0
+    },
+    {
+      "id": "state_wa_zero",
+      "category": "state_tax",
+      "type": "state_tax",
+      "inputs": {
+        "state_code": "WA",
+        "gross_taxable": 100000,
+        "ss_taxable": 0,
+        "filing_status": "mfj",
+        "inflation_factor": 1.0
+      },
+      "expect": 0.0,
+      "tolerance": 2.0
+    },
+    {
+      "id": "state_or_progressive",
+      "category": "state_tax",
+      "type": "state_tax",
+      "inputs": {
+        "state_code": "OR",
+        "gross_taxable": 110000,
+        "ss_taxable": 6000,
+        "filing_status": "mfj",
+        "inflation_factor": 1.0
+      },
+      "expect": 8542.62,
+      "tolerance": 2.0
+    },
+    {
+      "id": "aca_low_magi",
+      "category": "aca",
+      "type": "aca_net",
+      "inputs": {
+        "enrollee_ages": [
+          60,
+          58
+        ],
+        "magi": 28000,
+        "household_size": 2,
+        "filing_status": "mfj",
+        "benchmark_monthly_age_21": 475,
+        "inflation_factor": 1.0
+      },
+      "expect": {
+        "net": 0.0,
+        "subsidy": 24810.96,
+        "gross": 24810.96,
+        "fpl_pct": 136.99
+      },
+      "tolerance": 5.0
+    },
+    {
+      "id": "aca_mid_magi",
+      "category": "aca",
+      "type": "aca_net",
+      "inputs": {
+        "enrollee_ages": [
+          63
+        ],
+        "magi": 55000,
+        "household_size": 2,
+        "filing_status": "mfj",
+        "benchmark_monthly_age_21": 475,
+        "inflation_factor": 1.0
+      },
+      "expect": {
+        "net": 2619.77,
+        "subsidy": 13378.71,
+        "gross": 15998.47,
+        "fpl_pct": 269.08
+      },
+      "tolerance": 5.0
+    },
+    {
+      "id": "aca_high_magi",
+      "category": "aca",
+      "type": "aca_net",
+      "inputs": {
+        "enrollee_ages": [
+          64
+        ],
+        "magi": 120000,
+        "household_size": 2,
+        "filing_status": "mfj",
+        "benchmark_monthly_age_21": 475,
+        "inflation_factor": 1.0
+      },
+      "expect": {
+        "net": 10200.0,
+        "subsidy": 6894.3,
+        "gross": 17094.3,
+        "fpl_pct": 587.08
+      },
+      "tolerance": 5.0
+    },
+    {
+      "id": "aca_couple_62",
+      "category": "aca",
+      "type": "aca_net",
+      "inputs": {
+        "enrollee_ages": [
+          62,
+          60
+        ],
+        "magi": 42000,
+        "household_size": 2,
+        "filing_status": "mfj",
+        "benchmark_monthly_age_21": 475,
+        "inflation_factor": 1.0
+      },
+      "expect": {
+        "net": 932.05,
+        "subsidy": 26681.6,
+        "gross": 27613.65,
+        "fpl_pct": 205.48
+      },
+      "tolerance": 5.0
+    },
+    {
+      "id": "aca_pct_120",
+      "category": "aca",
+      "type": "aca_applicable_pct",
+      "inputs": {
+        "fpl_percent": 120
+      },
+      "expect": 0.0,
+      "tolerance": 0.0001
+    },
+    {
+      "id": "aca_pct_175",
+      "category": "aca",
+      "type": "aca_applicable_pct",
+      "inputs": {
+        "fpl_percent": 175
+      },
+      "expect": 0.01,
+      "tolerance": 0.0001
+    },
+    {
+      "id": "aca_pct_225",
+      "category": "aca",
+      "type": "aca_applicable_pct",
+      "inputs": {
+        "fpl_percent": 225
+      },
+      "expect": 0.03,
+      "tolerance": 0.0001
+    },
+    {
+      "id": "aca_pct_275",
+      "category": "aca",
+      "type": "aca_applicable_pct",
+      "inputs": {
+        "fpl_percent": 275
+      },
+      "expect": 0.05,
+      "tolerance": 0.0001
+    },
+    {
+      "id": "aca_pct_350",
+      "category": "aca",
+      "type": "aca_applicable_pct",
+      "inputs": {
+        "fpl_percent": 350
+      },
+      "expect": 0.0725,
+      "tolerance": 0.0001
+    },
+    {
+      "id": "aca_pct_450",
+      "category": "aca",
+      "type": "aca_applicable_pct",
+      "inputs": {
+        "fpl_percent": 450
+      },
+      "expect": 0.085,
+      "tolerance": 0.0001
+    },
+    {
+      "id": "medicare_base_one",
+      "category": "medicare",
+      "type": "medicare_total",
+      "inputs": {
+        "ages": {
+          "self": 67
+        },
+        "magi": 80000,
+        "filing_status": "mfj",
+        "inflation_factor": 1.0
+      },
+      "expect": {
+        "total": 2762.4,
+        "irmaa": 0.0,
+        "base": 2762.4
+      },
+      "tolerance": 5.0
+    },
+    {
+      "id": "medicare_couple",
+      "category": "medicare",
+      "type": "medicare_total",
+      "inputs": {
+        "ages": {
+          "self": 67,
+          "spouse": 65
+        },
+        "magi": 90000,
+        "filing_status": "mfj",
+        "inflation_factor": 1.0
+      },
+      "expect": {
+        "total": 5524.8,
+        "irmaa": 0.0,
+        "base": 5524.8
+      },
+      "tolerance": 5.0
+    },
+    {
+      "id": "medicare_irmaa_tier2",
+      "category": "medicare",
+      "type": "medicare_total",
+      "inputs": {
+        "ages": {
+          "self": 70
+        },
+        "magi": 280000,
+        "filing_status": "mfj",
+        "inflation_factor": 1.0
+      },
+      "expect": {
+        "total": 5258.4,
+        "irmaa": 2496.0,
+        "base": 2762.4
+      },
+      "tolerance": 5.0
+    },
+    {
+      "id": "medicare_irmaa_top",
+      "category": "medicare",
+      "type": "medicare_total",
+      "inputs": {
+        "ages": {
+          "self": 72
+        },
+        "magi": 900000,
+        "filing_status": "mfj",
+        "inflation_factor": 1.0
+      },
+      "expect": {
+        "total": 8766.0,
+        "irmaa": 6003.6,
+        "base": 2762.4
+      },
+      "tolerance": 5.0
+    },
+    {
+      "id": "irmaa_mfj_std",
+      "category": "medicare",
+      "type": "medicare_irmaa_monthly",
+      "inputs": {
+        "magi": 150000,
+        "filing_status": "mfj",
+        "inflation_factor": 1.0
+      },
+      "expect": {
+        "part_b": 0.0,
+        "part_d": 0.0
+      },
+      "tolerance": 0.01
+    },
+    {
+      "id": "irmaa_mfj_tier3",
+      "category": "medicare",
+      "type": "medicare_irmaa_monthly",
+      "inputs": {
+        "magi": 340000,
+        "filing_status": "mfj",
+        "inflation_factor": 1.0
+      },
+      "expect": {
+        "part_b": 279.5,
+        "part_d": 53.8
+      },
+      "tolerance": 0.01
+    },
+    {
+      "id": "irmaa_single_tier2",
+      "category": "medicare",
+      "type": "medicare_irmaa_monthly",
+      "inputs": {
+        "magi": 140000,
+        "filing_status": "single",
+        "inflation_factor": 1.0
+      },
+      "expect": {
+        "part_b": 174.7,
+        "part_d": 33.3
+      },
+      "tolerance": 0.01
+    },
+    {
+      "id": "rmd_age_73",
+      "category": "rmd",
+      "type": "rmd",
+      "inputs": {
+        "traditional_balance": 1000000,
+        "age": 73,
+        "rmd_start_age": 73
+      },
+      "expect": 37735.85,
+      "tolerance": 1.0
+    },
+    {
+      "id": "rmd_age_80",
+      "category": "rmd",
+      "type": "rmd",
+      "inputs": {
+        "traditional_balance": 800000,
+        "age": 80,
+        "rmd_start_age": 73
+      },
+      "expect": 39603.96,
+      "tolerance": 1.0
+    },
+    {
+      "id": "rmd_age_90",
+      "category": "rmd",
+      "type": "rmd",
+      "inputs": {
+        "traditional_balance": 500000,
+        "age": 90,
+        "rmd_start_age": 73
+      },
+      "expect": 40983.61,
+      "tolerance": 1.0
+    },
+    {
+      "id": "rmd_age_75_legacy",
+      "category": "rmd",
+      "type": "rmd",
+      "inputs": {
+        "traditional_balance": 600000,
+        "age": 75,
+        "rmd_start_age": 72
+      },
+      "expect": 24390.24,
+      "tolerance": 1.0
+    },
+    {
+      "id": "fica_under_cap",
+      "category": "payroll",
+      "type": "fica",
+      "inputs": {
+        "wages": 80000,
+        "filing_status": "mfj",
+        "inflation_factor": 1.0
+      },
+      "expect": {
+        "ss_tax": 4960.0,
+        "medicare_tax": 1160.0,
+        "total": 6120.0
+      },
+      "tolerance": 1.0
+    },
+    {
+      "id": "fica_at_cap",
+      "category": "payroll",
+      "type": "fica",
+      "inputs": {
+        "wages": 180000,
+        "filing_status": "mfj",
+        "inflation_factor": 1.0
+      },
+      "expect": {
+        "ss_tax": 10453.2,
+        "medicare_tax": 2610.0,
+        "total": 13063.2
+      },
+      "tolerance": 1.0
+    },
+    {
+      "id": "fica_additional_medicare",
+      "category": "payroll",
+      "type": "fica",
+      "inputs": {
+        "wages": 260000,
+        "filing_status": "single",
+        "inflation_factor": 1.0
+      },
+      "expect": {
+        "ss_tax": 10453.2,
+        "medicare_tax": 4310.0,
+        "total": 14763.2
+      },
+      "tolerance": 1.0
+    },
+    {
+      "id": "ss_pia_low",
+      "category": "social_security",
+      "type": "ss_pia",
+      "inputs": {
+        "aime": 1000,
+        "inflation_factor": 1.0
+      },
+      "expect": 900.0,
+      "tolerance": 0.5
+    },
+    {
+      "id": "ss_pia_mid",
+      "category": "social_security",
+      "type": "ss_pia",
+      "inputs": {
+        "aime": 4000,
+        "inflation_factor": 1.0
+      },
+      "expect": 1960.92,
+      "tolerance": 0.5
+    },
+    {
+      "id": "ss_pia_high",
+      "category": "social_security",
+      "type": "ss_pia",
+      "inputs": {
+        "aime": 9000,
+        "inflation_factor": 1.0
+      },
+      "expect": 3234.18,
+      "tolerance": 0.5
+    },
+    {
+      "id": "ss_claim_early",
+      "category": "social_security",
+      "type": "ss_monthly_benefit",
+      "inputs": {
+        "pia_monthly": 2800,
+        "claiming_age": 62,
+        "birth_year": 1960
+      },
+      "expect": 1960.0,
+      "tolerance": 0.5
+    },
+    {
+      "id": "ss_claim_fra",
+      "category": "social_security",
+      "type": "ss_monthly_benefit",
+      "inputs": {
+        "pia_monthly": 3200,
+        "claiming_age": 67,
+        "birth_year": 1960
+      },
+      "expect": 3200.0,
+      "tolerance": 0.5
+    },
+    {
+      "id": "ss_claim_late",
+      "category": "social_security",
+      "type": "ss_monthly_benefit",
+      "inputs": {
+        "pia_monthly": 3200,
+        "claiming_age": 70,
+        "birth_year": 1960
+      },
+      "expect": 3968.0,
+      "tolerance": 0.5
+    },
+    {
+      "id": "policy_mfj_sd",
+      "category": "policy_tables",
+      "type": "policy_field",
+      "inputs": {
+        "field": "mfj_standard_deduction",
+        "inflation_factor": 1.0
+      },
+      "expect": 29200.0,
+      "tolerance": 0.5
+    },
+    {
+      "id": "policy_fpl",
+      "category": "policy_tables",
+      "type": "policy_field",
+      "inputs": {
+        "field": "fpl_base",
+        "inflation_factor": 1.0
+      },
+      "expect": 15060.0,
+      "tolerance": 0.5
+    },
+    {
+      "id": "policy_inflation_sd",
+      "category": "policy_tables",
+      "type": "policy_field",
+      "inputs": {
+        "field": "mfj_standard_deduction",
+        "inflation_factor": 1.03
+      },
+      "expect": 30076.0,
+      "tolerance": 0.5
+    },
+    {
+      "id": "policy_inflation_fpl",
+      "category": "policy_tables",
+      "type": "policy_field",
+      "inputs": {
+        "field": "fpl_base",
+        "inflation_factor": 1.03
+      },
+      "expect": 15511.8,
+      "tolerance": 0.5
+    }
+  ]
+}

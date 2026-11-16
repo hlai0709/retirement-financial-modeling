@@ -1,0 +1,9 @@
+{
+  "parser_id": "property_tax_bill",
+  "config_version": "1",
+  "description": "County / city property tax bill — annual tax or installment × 2",
+  "field_map": {
+    "property_tax_annual": "total_due_or_installment_x2"
+  },
+  "notes": "Upload one bill per property. Imports stack (sum) into Property Tax Annual for cash-flow spending. Schedule A SALT on the 1040 is separate (tax deduction, often capped)."
+}

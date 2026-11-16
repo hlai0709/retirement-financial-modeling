@@ -1,0 +1,8 @@
+{
+  "parser_id": "1099_r",
+  "config_version": "2024_v1",
+  "description": "1099-R gross distribution → pension_amount",
+  "field_map": {
+    "pension_amount": "box_1"
+  }
+}

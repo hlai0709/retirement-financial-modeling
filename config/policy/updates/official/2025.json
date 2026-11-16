@@ -1,0 +1,170 @@
+{
+  "tax_year": 2025,
+  "source": "IRS Rev. Proc. 2024-40 (rp-24-40)",
+  "fetched_at": "2026-06-21T20:14:41+00:00",
+  "fetch_method": "irs_newsroom_html",
+  "fetch_notes": "Federal ordinary brackets and standard deductions parsed from IRS newsroom. HOH brackets, LTCG tiers, SS thresholds, Medicare, and FPL scaled from prior tax year.",
+  "scalars": {
+    "mfj_standard_deduction": 30000,
+    "single_standard_deduction": 15000,
+    "hoh_standard_deduction": 22500,
+    "mfj_ss_base": 32877,
+    "mfj_ss_tier2": 45205,
+    "single_ss_base": 25685,
+    "single_ss_tier2": 34932,
+    "fpl_base": 15473,
+    "fpl_per_additional_person": 5527,
+    "medicare_part_b_monthly": 179.49,
+    "medicare_part_d_monthly": 57.02,
+    "mfj_additional_sd_65": 1592,
+    "single_additional_sd_65": 2003,
+    "niit_mfj_threshold": 256849,
+    "niit_single_threshold": 205479,
+    "niit_mfs_threshold": 128425
+  },
+  "brackets": {
+    "single": [
+      [
+        11925.0,
+        0.1
+      ],
+      [
+        11925.0,
+        0.12
+      ],
+      [
+        48475.0,
+        0.22
+      ],
+      [
+        103350.0,
+        0.24
+      ],
+      [
+        197300.0,
+        0.32
+      ],
+      [
+        250525.0,
+        0.35
+      ],
+      [
+        "inf",
+        0.37
+      ]
+    ],
+    "mfj": [
+      [
+        23850.0,
+        0.1
+      ],
+      [
+        23850.0,
+        0.12
+      ],
+      [
+        96950.0,
+        0.22
+      ],
+      [
+        206700.0,
+        0.24
+      ],
+      [
+        394600.0,
+        0.32
+      ],
+      [
+        501050.0,
+        0.35
+      ],
+      [
+        "inf",
+        0.37
+      ]
+    ],
+    "hoh": [
+      [
+        17877,
+        0.1
+      ],
+      [
+        68014,
+        0.12
+      ],
+      [
+        108442,
+        0.22
+      ],
+      [
+        206558,
+        0.24
+      ],
+      [
+        250377,
+        0.32
+      ],
+      [
+        626045,
+        0.35
+      ],
+      [
+        "inf",
+        0.37
+      ]
+    ],
+    "single_ltcg": [
+      [
+        48313,
+        0.0
+      ],
+      [
+        533116,
+        0.15
+      ],
+      [
+        "inf",
+        0.2
+      ]
+    ],
+    "mfj_ltcg": [
+      [
+        96627,
+        0.0
+      ],
+      [
+        599743,
+        0.15
+      ],
+      [
+        "inf",
+        0.2
+      ]
+    ],
+    "hoh_ltcg": [
+      [
+        64726,
+        0.0
+      ],
+      [
+        566455,
+        0.15
+      ],
+      [
+        "inf",
+        0.2
+      ]
+    ]
+  },
+  "amt": {
+    "exemption_mfj": 137000,
+    "exemption_single": 88100,
+    "exemption_mfs": 68650,
+    "phaseout_start_mfj": 1252700,
+    "phaseout_start_single": 626350,
+    "bracket_26_mfj": 232600,
+    "bracket_26_single": 116300,
+    "phaseout_start_mfs": 626350
+  },
+  "newsroom_url": "https://www.irs.gov/newsroom/irs-releases-tax-inflation-adjustments-for-tax-year-2025"
+}

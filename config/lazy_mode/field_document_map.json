@@ -1,0 +1,2265 @@
+{
+  "version": 1,
+  "field_count": 143,
+  "mappings": [
+    {
+      "field_key": "life_expectancy",
+      "person": null,
+      "data_source": "manual",
+      "completeness_core": true,
+      "ui_group": "timeline",
+      "sources": [
+        {
+          "document_id": "manual_gaps",
+          "tier": "C",
+          "acquisition": "guided_fallback",
+          "ready": true
+        }
+      ]
+    },
+    {
+      "field_key": "inflation_rate",
+      "person": null,
+      "data_source": "market",
+      "completeness_core": true,
+      "ui_group": "market",
+      "sources": [
+        {
+          "document_id": "market_data",
+          "tier": "A",
+          "acquisition": "refresh_market",
+          "ready": true
+        }
+      ]
+    },
+    {
+      "field_key": "investment_return_mean",
+      "person": null,
+      "data_source": "market",
+      "completeness_core": true,
+      "ui_group": "market",
+      "sources": [
+        {
+          "document_id": "market_data",
+          "tier": "A",
+          "acquisition": "refresh_market",
+          "ready": true
+        }
+      ]
+    },
+    {
+      "field_key": "tsla_current_price",
+      "person": null,
+      "data_source": "market",
+      "completeness_core": false,
+      "ui_group": "market",
+      "sources": [
+        {
+          "document_id": "market_data",
+          "tier": "A",
+          "acquisition": "refresh_market",
+          "ready": true
+        }
+      ]
+    },
+    {
+      "field_key": "pre_retire_tax_rate",
+      "person": null,
+      "data_source": "manual",
+      "completeness_core": true,
+      "ui_group": "tax_benefits",
+      "sources": [
+        {
+          "document_id": "form_1040",
+          "tier": "A",
+          "acquisition": "upload",
+          "ready": true
+        }
+      ]
+    },
+    {
+      "field_key": "post_retire_tax_rate",
+      "person": null,
+      "data_source": "manual",
+      "completeness_core": true,
+      "ui_group": "tax_benefits",
+      "sources": [
+        {
+          "document_id": "manual_gaps",
+          "tier": "C",
+          "acquisition": "guided_fallback",
+          "ready": true
+        }
+      ]
+    },
+    {
+      "field_key": "roth_portfolio_pct",
+      "person": null,
+      "data_source": "manual",
+      "completeness_core": false,
+      "ui_group": "assets_self",
+      "sources": [
+        {
+          "document_id": "manual_gaps",
+          "tier": "C",
+          "acquisition": "guided_fallback",
+          "ready": true
+        }
+      ]
+    },
+    {
+      "field_key": "contribution_roth_pct",
+      "person": null,
+      "data_source": "manual",
+      "completeness_core": false,
+      "ui_group": "income_self",
+      "sources": [
+        {
+          "document_id": "pay_stub",
+          "tier": "A",
+          "acquisition": "upload",
+          "ready": true
+        },
+        {
+          "document_id": "manual_gaps",
+          "tier": "C",
+          "acquisition": "guided_fallback",
+          "ready": true
+        }
+      ]
+    },
+    {
+      "field_key": "ss_tax_method",
+      "person": null,
+      "data_source": "manual",
+      "completeness_core": false,
+      "ui_group": "tax_benefits",
+      "sources": [
+        {
+          "document_id": "manual_gaps",
+          "tier": "C",
+          "acquisition": "guided_fallback",
+          "ready": true
+        }
+      ]
+    },
+    {
+      "field_key": "ss_taxable_fraction",
+      "person": null,
+      "data_source": "manual",
+      "completeness_core": false,
+      "ui_group": "tax_benefits",
+      "sources": [
+        {
+          "document_id": "manual_gaps",
+          "tier": "C",
+          "acquisition": "guided_fallback",
+          "ready": true
+        }
+      ]
+    },
+    {
+      "field_key": "rmd_start_age",
+      "person": null,
+      "data_source": "manual",
+      "completeness_core": false,
+      "ui_group": "tax_benefits",
+      "sources": [
+        {
+          "document_id": "manual_gaps",
+          "tier": "C",
+          "acquisition": "guided_fallback",
+          "ready": true
+        }
+      ]
+    },
+    {
+      "field_key": "use_birth_year_rmd",
+      "person": null,
+      "data_source": "manual",
+      "completeness_core": false,
+      "ui_group": "tax_benefits",
+      "sources": [
+        {
+          "document_id": "manual_gaps",
+          "tier": "C",
+          "acquisition": "guided_fallback",
+          "ready": true
+        }
+      ]
+    },
+    {
+      "field_key": "taxable_gain_fraction",
+      "person": null,
+      "data_source": "manual",
+      "completeness_core": false,
+      "ui_group": "tax_benefits",
+      "sources": [
+        {
+          "document_id": "manual_gaps",
+          "tier": "C",
+          "acquisition": "guided_fallback",
+          "ready": true
+        }
+      ]
+    },
+    {
+      "field_key": "niit_enabled",
+      "person": null,
+      "data_source": "manual",
+      "completeness_core": false,
+      "ui_group": "tax_benefits",
+      "sources": [
+        {
+          "document_id": "manual_gaps",
+          "tier": "C",
+          "acquisition": "guided_fallback",
+          "ready": true
+        }
+      ]
+    },
+    {
+      "field_key": "mfs_lived_apart",
+      "person": null,
+      "data_source": "manual",
+      "completeness_core": false,
+      "ui_group": "tax_benefits",
+      "sources": [
+        {
+          "document_id": "manual_gaps",
+          "tier": "C",
+          "acquisition": "guided_fallback",
+          "ready": true
+        }
+      ]
+    },
+    {
+      "field_key": "withdrawal_order",
+      "person": null,
+      "data_source": "manual",
+      "completeness_core": false,
+      "ui_group": "tax_benefits",
+      "sources": [
+        {
+          "document_id": "manual_gaps",
+          "tier": "C",
+          "acquisition": "guided_fallback",
+          "ready": true
+        }
+      ]
+    },
+    {
+      "field_key": "working_year_tax_enabled",
+      "person": null,
+      "data_source": "manual",
+      "completeness_core": false,
+      "ui_group": "tax_benefits",
+      "sources": [
+        {
+          "document_id": "manual_gaps",
+          "tier": "C",
+          "acquisition": "guided_fallback",
+          "ready": true
+        }
+      ]
+    },
+    {
+      "field_key": "roth_conversion_target_bracket",
+      "person": null,
+      "data_source": "manual",
+      "completeness_core": false,
+      "ui_group": "tax_benefits",
+      "sources": [
+        {
+          "document_id": "manual_gaps",
+          "tier": "C",
+          "acquisition": "guided_fallback",
+          "ready": true
+        }
+      ]
+    },
+    {
+      "field_key": "expense_phase_mode",
+      "person": null,
+      "data_source": "manual",
+      "completeness_core": false,
+      "ui_group": "spending_self",
+      "sources": [
+        {
+          "document_id": "manual_gaps",
+          "tier": "C",
+          "acquisition": "guided_fallback",
+          "ready": true
+        }
+      ]
+    },
+    {
+      "field_key": "expense_go_go_end_age",
+      "person": null,
+      "data_source": "manual",
+      "completeness_core": false,
+      "ui_group": "spending_self",
+      "sources": [
+        {
+          "document_id": "manual_gaps",
+          "tier": "C",
+          "acquisition": "guided_fallback",
+          "ready": true
+        }
+      ]
+    },
+    {
+      "field_key": "expense_slow_go_end_age",
+      "person": null,
+      "data_source": "manual",
+      "completeness_core": false,
+      "ui_group": "spending_self",
+      "sources": [
+        {
+          "document_id": "manual_gaps",
+          "tier": "C",
+          "acquisition": "guided_fallback",
+          "ready": true
+        }
+      ]
+    },
+    {
+      "field_key": "expense_go_go_pct",
+      "person": null,
+      "data_source": "manual",
+      "completeness_core": false,
+      "ui_group": "spending_self",
+      "sources": [
+        {
+          "document_id": "manual_gaps",
+          "tier": "C",
+          "acquisition": "guided_fallback",
+          "ready": true
+        }
+      ]
+    },
+    {
+      "field_key": "expense_slow_go_pct",
+      "person": null,
+      "data_source": "manual",
+      "completeness_core": false,
+      "ui_group": "spending_self",
+      "sources": [
+        {
+          "document_id": "manual_gaps",
+          "tier": "C",
+          "acquisition": "guided_fallback",
+          "ready": true
+        }
+      ]
+    },
+    {
+      "field_key": "expense_no_go_pct",
+      "person": null,
+      "data_source": "manual",
+      "completeness_core": false,
+      "ui_group": "spending_self",
+      "sources": [
+        {
+          "document_id": "manual_gaps",
+          "tier": "C",
+          "acquisition": "guided_fallback",
+          "ready": true
+        }
+      ]
+    },
+    {
+      "field_key": "ltc_inflation_rate",
+      "person": null,
+      "data_source": "manual",
+      "completeness_core": false,
+      "ui_group": "healthcare_self",
+      "sources": [
+        {
+          "document_id": "manual_gaps",
+          "tier": "C",
+          "acquisition": "guided_fallback",
+          "ready": true
+        }
+      ]
+    },
+    {
+      "field_key": "survivor_filing_status",
+      "person": null,
+      "data_source": "manual",
+      "completeness_core": false,
+      "ui_group": "tax_benefits",
+      "sources": [
+        {
+          "document_id": "manual_gaps",
+          "tier": "C",
+          "acquisition": "guided_fallback",
+          "ready": true
+        }
+      ]
+    },
+    {
+      "field_key": "planning_precision",
+      "person": null,
+      "data_source": "manual",
+      "completeness_core": false,
+      "ui_group": "setup",
+      "sources": [
+        {
+          "document_id": "manual_gaps",
+          "tier": "C",
+          "acquisition": "guided_fallback",
+          "ready": true
+        }
+      ]
+    },
+    {
+      "field_key": "itemized_salt_annual",
+      "person": null,
+      "data_source": "manual",
+      "completeness_core": false,
+      "ui_group": "tax_benefits",
+      "sources": [
+        {
+          "document_id": "form_1040",
+          "tier": "A",
+          "acquisition": "upload",
+          "ready": true
+        }
+      ]
+    },
+    {
+      "field_key": "itemized_mortgage_interest",
+      "person": null,
+      "data_source": "manual",
+      "completeness_core": false,
+      "ui_group": "tax_benefits",
+      "sources": [
+        {
+          "document_id": "form_1040",
+          "tier": "A",
+          "acquisition": "upload",
+          "ready": true
+        },
+        {
+          "document_id": "form_1098",
+          "tier": "B",
+          "acquisition": "upload",
+          "ready": true
+        },
+        {
+          "document_id": "mortgage_statement",
+          "tier": "B",
+          "acquisition": "upload",
+          "ready": true
+        }
+      ]
+    },
+    {
+      "field_key": "itemized_charitable",
+      "person": null,
+      "data_source": "manual",
+      "completeness_core": false,
+      "ui_group": "tax_benefits",
+      "sources": [
+        {
+          "document_id": "form_1040",
+          "tier": "A",
+          "acquisition": "upload",
+          "ready": true
+        }
+      ]
+    },
+    {
+      "field_key": "itemized_medical",
+      "person": null,
+      "data_source": "manual",
+      "completeness_core": false,
+      "ui_group": "tax_benefits",
+      "sources": [
+        {
+          "document_id": "form_1040",
+          "tier": "A",
+          "acquisition": "upload",
+          "ready": true
+        }
+      ]
+    },
+    {
+      "field_key": "tax_calculation",
+      "person": null,
+      "data_source": "manual",
+      "completeness_core": false,
+      "ui_group": "tax_benefits",
+      "sources": [
+        {
+          "document_id": "manual_gaps",
+          "tier": "C",
+          "acquisition": "guided_fallback",
+          "ready": true
+        }
+      ]
+    },
+    {
+      "field_key": "marriage_year",
+      "person": null,
+      "data_source": "manual",
+      "completeness_core": true,
+      "ui_group": "timeline",
+      "sources": [
+        {
+          "document_id": "manual_gaps",
+          "tier": "C",
+          "acquisition": "guided_fallback",
+          "ready": true
+        }
+      ]
+    },
+    {
+      "field_key": "filing_status_before_marriage",
+      "person": null,
+      "data_source": "manual",
+      "completeness_core": false,
+      "ui_group": "tax_benefits",
+      "sources": [
+        {
+          "document_id": "manual_gaps",
+          "tier": "C",
+          "acquisition": "guided_fallback",
+          "ready": true
+        }
+      ]
+    },
+    {
+      "field_key": "filing_status_after_marriage",
+      "person": null,
+      "data_source": "manual",
+      "completeness_core": false,
+      "ui_group": "tax_benefits",
+      "sources": [
+        {
+          "document_id": "form_1040",
+          "tier": "A",
+          "acquisition": "upload",
+          "ready": true
+        }
+      ]
+    },
+    {
+      "field_key": "filing_status",
+      "person": null,
+      "data_source": "manual",
+      "completeness_core": false,
+      "ui_group": "tax_benefits",
+      "sources": [
+        {
+          "document_id": "manual_gaps",
+          "tier": "C",
+          "acquisition": "guided_fallback",
+          "ready": true
+        }
+      ]
+    },
+    {
+      "field_key": "state_of_residence",
+      "person": null,
+      "data_source": "manual",
+      "completeness_core": true,
+      "ui_group": "setup",
+      "sources": [
+        {
+          "document_id": "form_1040",
+          "tier": "A",
+          "acquisition": "upload",
+          "ready": true
+        }
+      ]
+    },
+    {
+      "field_key": "state_move_year",
+      "person": null,
+      "data_source": "manual",
+      "completeness_core": false,
+      "ui_group": "tax_benefits",
+      "sources": [
+        {
+          "document_id": "manual_gaps",
+          "tier": "C",
+          "acquisition": "guided_fallback",
+          "ready": true
+        }
+      ]
+    },
+    {
+      "field_key": "state_after_move",
+      "person": null,
+      "data_source": "manual",
+      "completeness_core": false,
+      "ui_group": "tax_benefits",
+      "sources": [
+        {
+          "document_id": "manual_gaps",
+          "tier": "C",
+          "acquisition": "guided_fallback",
+          "ready": true
+        }
+      ]
+    },
+    {
+      "field_key": "state_tax_enabled",
+      "person": null,
+      "data_source": "manual",
+      "completeness_core": false,
+      "ui_group": "tax_benefits",
+      "sources": [
+        {
+          "document_id": "manual_gaps",
+          "tier": "C",
+          "acquisition": "guided_fallback",
+          "ready": true
+        }
+      ]
+    },
+    {
+      "field_key": "state_tax_override_pct",
+      "person": null,
+      "data_source": "manual",
+      "completeness_core": false,
+      "ui_group": "tax_benefits",
+      "sources": [
+        {
+          "document_id": "manual_gaps",
+          "tier": "C",
+          "acquisition": "guided_fallback",
+          "ready": true
+        }
+      ]
+    },
+    {
+      "field_key": "medicare_enabled",
+      "person": null,
+      "data_source": "manual",
+      "completeness_core": false,
+      "ui_group": "healthcare_self",
+      "sources": [
+        {
+          "document_id": "manual_gaps",
+          "tier": "C",
+          "acquisition": "guided_fallback",
+          "ready": true
+        }
+      ]
+    },
+    {
+      "field_key": "medicare_start_age",
+      "person": null,
+      "data_source": "manual",
+      "completeness_core": false,
+      "ui_group": "healthcare_self",
+      "sources": [
+        {
+          "document_id": "manual_gaps",
+          "tier": "C",
+          "acquisition": "guided_fallback",
+          "ready": true
+        }
+      ]
+    },
+    {
+      "field_key": "medicare_part_b_monthly",
+      "person": null,
+      "data_source": "manual",
+      "completeness_core": false,
+      "ui_group": "healthcare_self",
+      "sources": [
+        {
+          "document_id": "manual_gaps",
+          "tier": "C",
+          "acquisition": "guided_fallback",
+          "ready": true
+        }
+      ]
+    },
+    {
+      "field_key": "medicare_part_d_monthly",
+      "person": null,
+      "data_source": "manual",
+      "completeness_core": false,
+      "ui_group": "healthcare_self",
+      "sources": [
+        {
+          "document_id": "manual_gaps",
+          "tier": "C",
+          "acquisition": "guided_fallback",
+          "ready": true
+        }
+      ]
+    },
+    {
+      "field_key": "medicare_irmaa_lookback_years",
+      "person": null,
+      "data_source": "manual",
+      "completeness_core": false,
+      "ui_group": "healthcare_self",
+      "sources": [
+        {
+          "document_id": "manual_gaps",
+          "tier": "C",
+          "acquisition": "guided_fallback",
+          "ready": true
+        }
+      ]
+    },
+    {
+      "field_key": "aca_premium_mode",
+      "person": null,
+      "data_source": "manual",
+      "completeness_core": false,
+      "ui_group": "healthcare_self",
+      "sources": [
+        {
+          "document_id": "manual_gaps",
+          "tier": "C",
+          "acquisition": "guided_fallback",
+          "ready": true
+        }
+      ]
+    },
+    {
+      "field_key": "aca_benchmark_monthly_age_21",
+      "person": null,
+      "data_source": "manual",
+      "completeness_core": false,
+      "ui_group": "healthcare_self",
+      "sources": [
+        {
+          "document_id": "manual_gaps",
+          "tier": "C",
+          "acquisition": "guided_fallback",
+          "ready": true
+        }
+      ]
+    },
+    {
+      "field_key": "aca_slcsp_monthly_age_21",
+      "person": null,
+      "data_source": "manual",
+      "completeness_core": false,
+      "ui_group": "healthcare_self",
+      "sources": [
+        {
+          "document_id": "manual_gaps",
+          "tier": "C",
+          "acquisition": "guided_fallback",
+          "ready": true
+        }
+      ]
+    },
+    {
+      "field_key": "aca_selected_plan_monthly_age_21",
+      "person": null,
+      "data_source": "manual",
+      "completeness_core": false,
+      "ui_group": "healthcare_self",
+      "sources": [
+        {
+          "document_id": "manual_gaps",
+          "tier": "C",
+          "acquisition": "guided_fallback",
+          "ready": true
+        }
+      ]
+    },
+    {
+      "field_key": "tsla_target_price",
+      "person": null,
+      "data_source": "manual",
+      "completeness_core": false,
+      "ui_group": "scenarios",
+      "sources": [
+        {
+          "document_id": "manual_gaps",
+          "tier": "C",
+          "acquisition": "guided_fallback",
+          "ready": true
+        }
+      ]
+    },
+    {
+      "field_key": "tsla_target_year",
+      "person": null,
+      "data_source": "manual",
+      "completeness_core": false,
+      "ui_group": "scenarios",
+      "sources": [
+        {
+          "document_id": "manual_gaps",
+          "tier": "C",
+          "acquisition": "guided_fallback",
+          "ready": true
+        }
+      ]
+    },
+    {
+      "field_key": "doomsday_drop_year",
+      "person": null,
+      "data_source": "manual",
+      "completeness_core": false,
+      "ui_group": "scenarios",
+      "sources": [
+        {
+          "document_id": "manual_gaps",
+          "tier": "C",
+          "acquisition": "guided_fallback",
+          "ready": true
+        }
+      ]
+    },
+    {
+      "field_key": "doomsday_drop_pct",
+      "person": null,
+      "data_source": "manual",
+      "completeness_core": false,
+      "ui_group": "scenarios",
+      "sources": [
+        {
+          "document_id": "manual_gaps",
+          "tier": "C",
+          "acquisition": "guided_fallback",
+          "ready": true
+        }
+      ]
+    },
+    {
+      "field_key": "rebalance_to_sp500",
+      "person": null,
+      "data_source": "manual",
+      "completeness_core": false,
+      "ui_group": "scenarios",
+      "sources": [
+        {
+          "document_id": "manual_gaps",
+          "tier": "C",
+          "acquisition": "guided_fallback",
+          "ready": true
+        }
+      ]
+    },
+    {
+      "field_key": "current_age",
+      "person": "self",
+      "data_source": "manual",
+      "completeness_core": true,
+      "ui_group": "timeline",
+      "sources": [
+        {
+          "document_id": "manual_gaps",
+          "tier": "C",
+          "acquisition": "guided_fallback",
+          "ready": true
+        }
+      ]
+    },
+    {
+      "field_key": "current_age",
+      "person": "wife",
+      "data_source": "manual",
+      "completeness_core": false,
+      "ui_group": "timeline",
+      "sources": [
+        {
+          "document_id": "manual_gaps",
+          "tier": "C",
+          "acquisition": "guided_fallback",
+          "ready": true
+        }
+      ]
+    },
+    {
+      "field_key": "birth_year",
+      "person": "self",
+      "data_source": "manual",
+      "completeness_core": true,
+      "ui_group": "timeline",
+      "sources": [
+        {
+          "document_id": "manual_gaps",
+          "tier": "C",
+          "acquisition": "guided_fallback",
+          "ready": true
+        }
+      ]
+    },
+    {
+      "field_key": "birth_year",
+      "person": "wife",
+      "data_source": "manual",
+      "completeness_core": false,
+      "ui_group": "timeline",
+      "sources": [
+        {
+          "document_id": "manual_gaps",
+          "tier": "C",
+          "acquisition": "guided_fallback",
+          "ready": true
+        }
+      ]
+    },
+    {
+      "field_key": "retirement_age",
+      "person": "self",
+      "data_source": "manual",
+      "completeness_core": true,
+      "ui_group": "income_self",
+      "sources": [
+        {
+          "document_id": "manual_gaps",
+          "tier": "C",
+          "acquisition": "guided_fallback",
+          "ready": true
+        }
+      ]
+    },
+    {
+      "field_key": "retirement_age",
+      "person": "wife",
+      "data_source": "manual",
+      "completeness_core": false,
+      "ui_group": "income_wife",
+      "sources": [
+        {
+          "document_id": "manual_gaps",
+          "tier": "C",
+          "acquisition": "guided_fallback",
+          "ready": true
+        }
+      ]
+    },
+    {
+      "field_key": "initial_assets",
+      "person": "self",
+      "data_source": "plaid",
+      "completeness_core": true,
+      "ui_group": "assets_self",
+      "sources": [
+        {
+          "document_id": "plaid_accounts",
+          "tier": "A",
+          "acquisition": "plaid_link",
+          "ready": true
+        },
+        {
+          "document_id": "brokerage_statement",
+          "tier": "B",
+          "acquisition": "upload",
+          "ready": false
+        }
+      ]
+    },
+    {
+      "field_key": "initial_assets",
+      "person": "wife",
+      "data_source": "plaid",
+      "completeness_core": false,
+      "ui_group": "assets_wife",
+      "sources": [
+        {
+          "document_id": "plaid_accounts",
+          "tier": "A",
+          "acquisition": "plaid_link",
+          "ready": true
+        },
+        {
+          "document_id": "brokerage_statement",
+          "tier": "B",
+          "acquisition": "upload",
+          "ready": false
+        }
+      ]
+    },
+    {
+      "field_key": "initial_taxable_assets",
+      "person": "self",
+      "data_source": "manual",
+      "completeness_core": false,
+      "ui_group": "assets_self",
+      "sources": [
+        {
+          "document_id": "brokerage_statement",
+          "tier": "B",
+          "acquisition": "upload",
+          "ready": false
+        }
+      ]
+    },
+    {
+      "field_key": "initial_taxable_assets",
+      "person": "wife",
+      "data_source": "manual",
+      "completeness_core": false,
+      "ui_group": "assets_wife",
+      "sources": [
+        {
+          "document_id": "brokerage_statement",
+          "tier": "B",
+          "acquisition": "upload",
+          "ready": false
+        }
+      ]
+    },
+    {
+      "field_key": "initial_traditional_ira",
+      "person": "self",
+      "data_source": "manual",
+      "completeness_core": false,
+      "ui_group": "assets_self",
+      "sources": [
+        {
+          "document_id": "401k_statement",
+          "tier": "B",
+          "acquisition": "upload",
+          "ready": false
+        }
+      ]
+    },
+    {
+      "field_key": "initial_traditional_ira",
+      "person": "wife",
+      "data_source": "manual",
+      "completeness_core": false,
+      "ui_group": "assets_wife",
+      "sources": [
+        {
+          "document_id": "401k_statement",
+          "tier": "B",
+          "acquisition": "upload",
+          "ready": false
+        }
+      ]
+    },
+    {
+      "field_key": "initial_roth_ira",
+      "person": "self",
+      "data_source": "manual",
+      "completeness_core": false,
+      "ui_group": "assets_self",
+      "sources": [
+        {
+          "document_id": "401k_statement",
+          "tier": "B",
+          "acquisition": "upload",
+          "ready": false
+        }
+      ]
+    },
+    {
+      "field_key": "initial_roth_ira",
+      "person": "wife",
+      "data_source": "manual",
+      "completeness_core": false,
+      "ui_group": "assets_wife",
+      "sources": [
+        {
+          "document_id": "401k_statement",
+          "tier": "B",
+          "acquisition": "upload",
+          "ready": false
+        }
+      ]
+    },
+    {
+      "field_key": "annual_contributions",
+      "person": "self",
+      "data_source": "manual",
+      "completeness_core": false,
+      "ui_group": "income_self",
+      "sources": [
+        {
+          "document_id": "pay_stub",
+          "tier": "A",
+          "acquisition": "upload",
+          "ready": true
+        },
+        {
+          "document_id": "manual_gaps",
+          "tier": "C",
+          "acquisition": "guided_fallback",
+          "ready": true
+        }
+      ]
+    },
+    {
+      "field_key": "annual_contributions",
+      "person": "wife",
+      "data_source": "manual",
+      "completeness_core": false,
+      "ui_group": "income_wife",
+      "sources": [
+        {
+          "document_id": "pay_stub",
+          "tier": "A",
+          "acquisition": "upload",
+          "ready": true
+        },
+        {
+          "document_id": "manual_gaps",
+          "tier": "C",
+          "acquisition": "guided_fallback",
+          "ready": true
+        }
+      ]
+    },
+    {
+      "field_key": "annual_earned_income",
+      "person": "self",
+      "data_source": "manual",
+      "completeness_core": true,
+      "ui_group": "income_self",
+      "sources": [
+        {
+          "document_id": "form_1040",
+          "tier": "A",
+          "acquisition": "upload",
+          "ready": true
+        },
+        {
+          "document_id": "w2",
+          "tier": "A",
+          "acquisition": "upload",
+          "ready": false
+        }
+      ]
+    },
+    {
+      "field_key": "annual_earned_income",
+      "person": "wife",
+      "data_source": "manual",
+      "completeness_core": false,
+      "ui_group": "income_wife",
+      "sources": [
+        {
+          "document_id": "form_1040",
+          "tier": "A",
+          "acquisition": "upload",
+          "ready": true
+        },
+        {
+          "document_id": "w2",
+          "tier": "A",
+          "acquisition": "upload",
+          "ready": false
+        }
+      ]
+    },
+    {
+      "field_key": "qcd_annual",
+      "person": "self",
+      "data_source": "manual",
+      "completeness_core": false,
+      "ui_group": "tax_benefits",
+      "sources": [
+        {
+          "document_id": "manual_gaps",
+          "tier": "C",
+          "acquisition": "guided_fallback",
+          "ready": true
+        }
+      ]
+    },
+    {
+      "field_key": "qcd_annual",
+      "person": "wife",
+      "data_source": "manual",
+      "completeness_core": false,
+      "ui_group": "tax_benefits",
+      "sources": [
+        {
+          "document_id": "manual_gaps",
+          "tier": "C",
+          "acquisition": "guided_fallback",
+          "ready": true
+        }
+      ]
+    },
+    {
+      "field_key": "employer_health_mode",
+      "person": "self",
+      "data_source": "manual",
+      "completeness_core": false,
+      "ui_group": "healthcare_self",
+      "sources": [
+        {
+          "document_id": "manual_gaps",
+          "tier": "C",
+          "acquisition": "guided_fallback",
+          "ready": true
+        }
+      ]
+    },
+    {
+      "field_key": "employer_health_mode",
+      "person": "wife",
+      "data_source": "manual",
+      "completeness_core": false,
+      "ui_group": "healthcare_wife",
+      "sources": [
+        {
+          "document_id": "manual_gaps",
+          "tier": "C",
+          "acquisition": "guided_fallback",
+          "ready": true
+        }
+      ]
+    },
+    {
+      "field_key": "employer_health_monthly",
+      "person": "self",
+      "data_source": "manual",
+      "completeness_core": false,
+      "ui_group": "healthcare_self",
+      "sources": [
+        {
+          "document_id": "manual_gaps",
+          "tier": "C",
+          "acquisition": "guided_fallback",
+          "ready": true
+        }
+      ]
+    },
+    {
+      "field_key": "employer_health_monthly",
+      "person": "wife",
+      "data_source": "manual",
+      "completeness_core": false,
+      "ui_group": "healthcare_wife",
+      "sources": [
+        {
+          "document_id": "manual_gaps",
+          "tier": "C",
+          "acquisition": "guided_fallback",
+          "ready": true
+        }
+      ]
+    },
+    {
+      "field_key": "cobra_months",
+      "person": "self",
+      "data_source": "manual",
+      "completeness_core": false,
+      "ui_group": "healthcare_self",
+      "sources": [
+        {
+          "document_id": "manual_gaps",
+          "tier": "C",
+          "acquisition": "guided_fallback",
+          "ready": true
+        }
+      ]
+    },
+    {
+      "field_key": "cobra_months",
+      "person": "wife",
+      "data_source": "manual",
+      "completeness_core": false,
+      "ui_group": "healthcare_wife",
+      "sources": [
+        {
+          "document_id": "manual_gaps",
+          "tier": "C",
+          "acquisition": "guided_fallback",
+          "ready": true
+        }
+      ]
+    },
+    {
+      "field_key": "medigap_plan",
+      "person": "self",
+      "data_source": "manual",
+      "completeness_core": false,
+      "ui_group": "healthcare_self",
+      "sources": [
+        {
+          "document_id": "manual_gaps",
+          "tier": "C",
+          "acquisition": "guided_fallback",
+          "ready": true
+        }
+      ]
+    },
+    {
+      "field_key": "medigap_plan",
+      "person": "wife",
+      "data_source": "manual",
+      "completeness_core": false,
+      "ui_group": "healthcare_wife",
+      "sources": [
+        {
+          "document_id": "manual_gaps",
+          "tier": "C",
+          "acquisition": "guided_fallback",
+          "ready": true
+        }
+      ]
+    },
+    {
+      "field_key": "medigap_monthly",
+      "person": "self",
+      "data_source": "manual",
+      "completeness_core": false,
+      "ui_group": "healthcare_self",
+      "sources": [
+        {
+          "document_id": "manual_gaps",
+          "tier": "C",
+          "acquisition": "guided_fallback",
+          "ready": true
+        }
+      ]
+    },
+    {
+      "field_key": "medigap_monthly",
+      "person": "wife",
+      "data_source": "manual",
+      "completeness_core": false,
+      "ui_group": "healthcare_wife",
+      "sources": [
+        {
+          "document_id": "manual_gaps",
+          "tier": "C",
+          "acquisition": "guided_fallback",
+          "ready": true
+        }
+      ]
+    },
+    {
+      "field_key": "filing_status_before_marriage",
+      "person": "self",
+      "data_source": "manual",
+      "completeness_core": false,
+      "ui_group": "tax_benefits",
+      "sources": [
+        {
+          "document_id": "manual_gaps",
+          "tier": "C",
+          "acquisition": "guided_fallback",
+          "ready": true
+        }
+      ]
+    },
+    {
+      "field_key": "filing_status_before_marriage",
+      "person": "wife",
+      "data_source": "manual",
+      "completeness_core": false,
+      "ui_group": "tax_benefits",
+      "sources": [
+        {
+          "document_id": "manual_gaps",
+          "tier": "C",
+          "acquisition": "guided_fallback",
+          "ready": true
+        }
+      ]
+    },
+    {
+      "field_key": "asset_share_pct",
+      "person": "self",
+      "data_source": "manual",
+      "completeness_core": false,
+      "ui_group": "assets_self",
+      "sources": [
+        {
+          "document_id": "manual_gaps",
+          "tier": "C",
+          "acquisition": "guided_fallback",
+          "ready": true
+        }
+      ]
+    },
+    {
+      "field_key": "asset_share_pct",
+      "person": "wife",
+      "data_source": "manual",
+      "completeness_core": false,
+      "ui_group": "assets_wife",
+      "sources": [
+        {
+          "document_id": "manual_gaps",
+          "tier": "C",
+          "acquisition": "guided_fallback",
+          "ready": true
+        }
+      ]
+    },
+    {
+      "field_key": "base_expenses",
+      "person": "self",
+      "data_source": "plaid",
+      "completeness_core": true,
+      "ui_group": "spending_self",
+      "sources": [
+        {
+          "document_id": "plaid_spending",
+          "tier": "A",
+          "acquisition": "plaid_refresh_expenses",
+          "ready": true
+        }
+      ]
+    },
+    {
+      "field_key": "base_expenses",
+      "person": "wife",
+      "data_source": "plaid",
+      "completeness_core": false,
+      "ui_group": "spending_wife",
+      "sources": [
+        {
+          "document_id": "plaid_spending",
+          "tier": "A",
+          "acquisition": "plaid_refresh_expenses",
+          "ready": true
+        }
+      ]
+    },
+    {
+      "field_key": "health_insurance_pre_medicare",
+      "person": "self",
+      "data_source": "manual",
+      "completeness_core": true,
+      "ui_group": "healthcare_self",
+      "sources": [
+        {
+          "document_id": "manual_gaps",
+          "tier": "C",
+          "acquisition": "guided_fallback",
+          "ready": true
+        }
+      ]
+    },
+    {
+      "field_key": "health_insurance_pre_medicare",
+      "person": "wife",
+      "data_source": "manual",
+      "completeness_core": false,
+      "ui_group": "healthcare_wife",
+      "sources": [
+        {
+          "document_id": "manual_gaps",
+          "tier": "C",
+          "acquisition": "guided_fallback",
+          "ready": true
+        }
+      ]
+    },
+    {
+      "field_key": "health_insurance_post_retire",
+      "person": "self",
+      "data_source": "manual",
+      "completeness_core": false,
+      "ui_group": "healthcare_self",
+      "sources": [
+        {
+          "document_id": "manual_gaps",
+          "tier": "C",
+          "acquisition": "guided_fallback",
+          "ready": true
+        }
+      ]
+    },
+    {
+      "field_key": "health_insurance_post_retire",
+      "person": "wife",
+      "data_source": "manual",
+      "completeness_core": false,
+      "ui_group": "healthcare_wife",
+      "sources": [
+        {
+          "document_id": "manual_gaps",
+          "tier": "C",
+          "acquisition": "guided_fallback",
+          "ready": true
+        }
+      ]
+    },
+    {
+      "field_key": "life_expectancy",
+      "person": "self",
+      "data_source": "manual",
+      "completeness_core": false,
+      "ui_group": "timeline",
+      "sources": [
+        {
+          "document_id": "manual_gaps",
+          "tier": "C",
+          "acquisition": "guided_fallback",
+          "ready": true
+        }
+      ]
+    },
+    {
+      "field_key": "life_expectancy",
+      "person": "wife",
+      "data_source": "manual",
+      "completeness_core": false,
+      "ui_group": "timeline",
+      "sources": [
+        {
+          "document_id": "manual_gaps",
+          "tier": "C",
+          "acquisition": "guided_fallback",
+          "ready": true
+        }
+      ]
+    },
+    {
+      "field_key": "long_term_care_annual",
+      "person": "self",
+      "data_source": "manual",
+      "completeness_core": false,
+      "ui_group": "spending_self",
+      "sources": [
+        {
+          "document_id": "manual_gaps",
+          "tier": "C",
+          "acquisition": "guided_fallback",
+          "ready": true
+        }
+      ]
+    },
+    {
+      "field_key": "long_term_care_annual",
+      "person": "wife",
+      "data_source": "manual",
+      "completeness_core": false,
+      "ui_group": "spending_wife",
+      "sources": [
+        {
+          "document_id": "manual_gaps",
+          "tier": "C",
+          "acquisition": "guided_fallback",
+          "ready": true
+        }
+      ]
+    },
+    {
+      "field_key": "ltc_mode",
+      "person": "self",
+      "data_source": "manual",
+      "completeness_core": false,
+      "ui_group": "healthcare_self",
+      "sources": [
+        {
+          "document_id": "manual_gaps",
+          "tier": "C",
+          "acquisition": "guided_fallback",
+          "ready": true
+        }
+      ]
+    },
+    {
+      "field_key": "ltc_mode",
+      "person": "wife",
+      "data_source": "manual",
+      "completeness_core": false,
+      "ui_group": "healthcare_wife",
+      "sources": [
+        {
+          "document_id": "manual_gaps",
+          "tier": "C",
+          "acquisition": "guided_fallback",
+          "ready": true
+        }
+      ]
+    },
+    {
+      "field_key": "ltc_start_age",
+      "person": "self",
+      "data_source": "manual",
+      "completeness_core": false,
+      "ui_group": "healthcare_self",
+      "sources": [
+        {
+          "document_id": "manual_gaps",
+          "tier": "C",
+          "acquisition": "guided_fallback",
+          "ready": true
+        }
+      ]
+    },
+    {
+      "field_key": "ltc_start_age",
+      "person": "wife",
+      "data_source": "manual",
+      "completeness_core": false,
+      "ui_group": "healthcare_wife",
+      "sources": [
+        {
+          "document_id": "manual_gaps",
+          "tier": "C",
+          "acquisition": "guided_fallback",
+          "ready": true
+        }
+      ]
+    },
+    {
+      "field_key": "ltc_duration_years",
+      "person": "self",
+      "data_source": "manual",
+      "completeness_core": false,
+      "ui_group": "healthcare_self",
+      "sources": [
+        {
+          "document_id": "manual_gaps",
+          "tier": "C",
+          "acquisition": "guided_fallback",
+          "ready": true
+        }
+      ]
+    },
+    {
+      "field_key": "ltc_duration_years",
+      "person": "wife",
+      "data_source": "manual",
+      "completeness_core": false,
+      "ui_group": "healthcare_wife",
+      "sources": [
+        {
+          "document_id": "manual_gaps",
+          "tier": "C",
+          "acquisition": "guided_fallback",
+          "ready": true
+        }
+      ]
+    },
+    {
+      "field_key": "ltc_care_setting",
+      "person": "self",
+      "data_source": "manual",
+      "completeness_core": false,
+      "ui_group": "healthcare_self",
+      "sources": [
+        {
+          "document_id": "manual_gaps",
+          "tier": "C",
+          "acquisition": "guided_fallback",
+          "ready": true
+        }
+      ]
+    },
+    {
+      "field_key": "ltc_care_setting",
+      "person": "wife",
+      "data_source": "manual",
+      "completeness_core": false,
+      "ui_group": "healthcare_wife",
+      "sources": [
+        {
+          "document_id": "manual_gaps",
+          "tier": "C",
+          "acquisition": "guided_fallback",
+          "ready": true
+        }
+      ]
+    },
+    {
+      "field_key": "mortgage_annual",
+      "person": "self",
+      "data_source": "manual",
+      "completeness_core": false,
+      "ui_group": "spending_self",
+      "sources": [
+        {
+          "document_id": "mortgage_statement",
+          "tier": "B",
+          "acquisition": "upload",
+          "ready": true
+        },
+        {
+          "document_id": "form_1098",
+          "tier": "B",
+          "acquisition": "upload",
+          "ready": true
+        },
+        {
+          "document_id": "manual_gaps",
+          "tier": "C",
+          "acquisition": "guided_fallback",
+          "ready": true
+        }
+      ]
+    },
+    {
+      "field_key": "mortgage_annual",
+      "person": "wife",
+      "data_source": "manual",
+      "completeness_core": false,
+      "ui_group": "spending_wife",
+      "sources": [
+        {
+          "document_id": "mortgage_statement",
+          "tier": "B",
+          "acquisition": "upload",
+          "ready": true
+        },
+        {
+          "document_id": "form_1098",
+          "tier": "B",
+          "acquisition": "upload",
+          "ready": true
+        },
+        {
+          "document_id": "manual_gaps",
+          "tier": "C",
+          "acquisition": "guided_fallback",
+          "ready": true
+        }
+      ]
+    },
+    {
+      "field_key": "mortgage_payoff_year",
+      "person": "self",
+      "data_source": "manual",
+      "completeness_core": false,
+      "ui_group": "spending_self",
+      "sources": [
+        {
+          "document_id": "mortgage_statement",
+          "tier": "B",
+          "acquisition": "upload",
+          "ready": true
+        },
+        {
+          "document_id": "form_1098",
+          "tier": "B",
+          "acquisition": "upload",
+          "ready": true
+        },
+        {
+          "document_id": "manual_gaps",
+          "tier": "C",
+          "acquisition": "guided_fallback",
+          "ready": true
+        }
+      ]
+    },
+    {
+      "field_key": "mortgage_payoff_year",
+      "person": "wife",
+      "data_source": "manual",
+      "completeness_core": false,
+      "ui_group": "spending_wife",
+      "sources": [
+        {
+          "document_id": "mortgage_statement",
+          "tier": "B",
+          "acquisition": "upload",
+          "ready": true
+        },
+        {
+          "document_id": "form_1098",
+          "tier": "B",
+          "acquisition": "upload",
+          "ready": true
+        },
+        {
+          "document_id": "manual_gaps",
+          "tier": "C",
+          "acquisition": "guided_fallback",
+          "ready": true
+        }
+      ]
+    },
+    {
+      "field_key": "one_time_expense_year",
+      "person": "self",
+      "data_source": "manual",
+      "completeness_core": false,
+      "ui_group": "spending_self",
+      "sources": [
+        {
+          "document_id": "manual_gaps",
+          "tier": "C",
+          "acquisition": "guided_fallback",
+          "ready": true
+        }
+      ]
+    },
+    {
+      "field_key": "one_time_expense_year",
+      "person": "wife",
+      "data_source": "manual",
+      "completeness_core": false,
+      "ui_group": "spending_wife",
+      "sources": [
+        {
+          "document_id": "manual_gaps",
+          "tier": "C",
+          "acquisition": "guided_fallback",
+          "ready": true
+        }
+      ]
+    },
+    {
+      "field_key": "one_time_expense_amount",
+      "person": "self",
+      "data_source": "manual",
+      "completeness_core": false,
+      "ui_group": "spending_self",
+      "sources": [
+        {
+          "document_id": "manual_gaps",
+          "tier": "C",
+          "acquisition": "guided_fallback",
+          "ready": true
+        }
+      ]
+    },
+    {
+      "field_key": "one_time_expense_amount",
+      "person": "wife",
+      "data_source": "manual",
+      "completeness_core": false,
+      "ui_group": "spending_wife",
+      "sources": [
+        {
+          "document_id": "manual_gaps",
+          "tier": "C",
+          "acquisition": "guided_fallback",
+          "ready": true
+        }
+      ]
+    },
+    {
+      "field_key": "rental_income_start",
+      "person": "self",
+      "data_source": "manual",
+      "completeness_core": false,
+      "ui_group": "income_self",
+      "sources": [
+        {
+          "document_id": "form_1040",
+          "tier": "A",
+          "acquisition": "upload",
+          "ready": true
+        }
+      ]
+    },
+    {
+      "field_key": "rental_income_start",
+      "person": "wife",
+      "data_source": "manual",
+      "completeness_core": false,
+      "ui_group": "income_wife",
+      "sources": [
+        {
+          "document_id": "form_1040",
+          "tier": "A",
+          "acquisition": "upload",
+          "ready": true
+        }
+      ]
+    },
+    {
+      "field_key": "rental_growth_rate",
+      "person": "self",
+      "data_source": "manual",
+      "completeness_core": false,
+      "ui_group": "income_self",
+      "sources": [
+        {
+          "document_id": "manual_gaps",
+          "tier": "C",
+          "acquisition": "guided_fallback",
+          "ready": true
+        }
+      ]
+    },
+    {
+      "field_key": "rental_growth_rate",
+      "person": "wife",
+      "data_source": "manual",
+      "completeness_core": false,
+      "ui_group": "income_wife",
+      "sources": [
+        {
+          "document_id": "manual_gaps",
+          "tier": "C",
+          "acquisition": "guided_fallback",
+          "ready": true
+        }
+      ]
+    },
+    {
+      "field_key": "pension_start_age",
+      "person": "self",
+      "data_source": "manual",
+      "completeness_core": false,
+      "ui_group": "tax_benefits",
+      "sources": [
+        {
+          "document_id": "manual_gaps",
+          "tier": "C",
+          "acquisition": "guided_fallback",
+          "ready": true
+        }
+      ]
+    },
+    {
+      "field_key": "pension_start_age",
+      "person": "wife",
+      "data_source": "manual",
+      "completeness_core": false,
+      "ui_group": "tax_benefits",
+      "sources": [
+        {
+          "document_id": "manual_gaps",
+          "tier": "C",
+          "acquisition": "guided_fallback",
+          "ready": true
+        }
+      ]
+    },
+    {
+      "field_key": "pension_amount",
+      "person": "self",
+      "data_source": "manual",
+      "completeness_core": false,
+      "ui_group": "tax_benefits",
+      "sources": [
+        {
+          "document_id": "form_1040",
+          "tier": "A",
+          "acquisition": "upload",
+          "ready": true
+        }
+      ]
+    },
+    {
+      "field_key": "pension_amount",
+      "person": "wife",
+      "data_source": "manual",
+      "completeness_core": false,
+      "ui_group": "tax_benefits",
+      "sources": [
+        {
+          "document_id": "form_1040",
+          "tier": "A",
+          "acquisition": "upload",
+          "ready": true
+        }
+      ]
+    },
+    {
+      "field_key": "ss_start_age",
+      "person": "self",
+      "data_source": "manual",
+      "completeness_core": true,
+      "ui_group": "tax_benefits",
+      "sources": [
+        {
+          "document_id": "ssa_1099",
+          "tier": "B",
+          "acquisition": "upload",
+          "ready": false
+        },
+        {
+          "document_id": "manual_gaps",
+          "tier": "C",
+          "acquisition": "guided_fallback",
+          "ready": true
+        }
+      ]
+    },
+    {
+      "field_key": "ss_start_age",
+      "person": "wife",
+      "data_source": "manual",
+      "completeness_core": false,
+      "ui_group": "tax_benefits",
+      "sources": [
+        {
+          "document_id": "ssa_1099",
+          "tier": "B",
+          "acquisition": "upload",
+          "ready": false
+        },
+        {
+          "document_id": "manual_gaps",
+          "tier": "C",
+          "acquisition": "guided_fallback",
+          "ready": true
+        }
+      ]
+    },
+    {
+      "field_key": "ss_benefit_mode",
+      "person": "self",
+      "data_source": "manual",
+      "completeness_core": false,
+      "ui_group": "tax_benefits",
+      "sources": [
+        {
+          "document_id": "manual_gaps",
+          "tier": "C",
+          "acquisition": "guided_fallback",
+          "ready": true
+        }
+      ]
+    },
+    {
+      "field_key": "ss_benefit_mode",
+      "person": "wife",
+      "data_source": "manual",
+      "completeness_core": false,
+      "ui_group": "tax_benefits",
+      "sources": [
+        {
+          "document_id": "manual_gaps",
+          "tier": "C",
+          "acquisition": "guided_fallback",
+          "ready": true
+        }
+      ]
+    },
+    {
+      "field_key": "ss_amount",
+      "person": "self",
+      "data_source": "manual",
+      "completeness_core": true,
+      "ui_group": "tax_benefits",
+      "sources": [
+        {
+          "document_id": "ssa_1099",
+          "tier": "B",
+          "acquisition": "upload",
+          "ready": false
+        }
+      ]
+    },
+    {
+      "field_key": "ss_amount",
+      "person": "wife",
+      "data_source": "manual",
+      "completeness_core": false,
+      "ui_group": "tax_benefits",
+      "sources": [
+        {
+          "document_id": "ssa_1099",
+          "tier": "B",
+          "acquisition": "upload",
+          "ready": false
+        }
+      ]
+    },
+    {
+      "field_key": "ss_pia_monthly",
+      "person": "self",
+      "data_source": "manual",
+      "completeness_core": false,
+      "ui_group": "tax_benefits",
+      "sources": [
+        {
+          "document_id": "ssa_1099",
+          "tier": "B",
+          "acquisition": "upload",
+          "ready": false
+        }
+      ]
+    },
+    {
+      "field_key": "ss_pia_monthly",
+      "person": "wife",
+      "data_source": "manual",
+      "completeness_core": false,
+      "ui_group": "tax_benefits",
+      "sources": [
+        {
+          "document_id": "ssa_1099",
+          "tier": "B",
+          "acquisition": "upload",
+          "ready": false
+        }
+      ]
+    },
+    {
+      "field_key": "ss_aime",
+      "person": "self",
+      "data_source": "manual",
+      "completeness_core": false,
+      "ui_group": "tax_benefits",
+      "sources": [
+        {
+          "document_id": "ssa_1099",
+          "tier": "B",
+          "acquisition": "upload",
+          "ready": false
+        }
+      ]
+    },
+    {
+      "field_key": "ss_aime",
+      "person": "wife",
+      "data_source": "manual",
+      "completeness_core": false,
+      "ui_group": "tax_benefits",
+      "sources": [
+        {
+          "document_id": "ssa_1099",
+          "tier": "B",
+          "acquisition": "upload",
+          "ready": false
+        }
+      ]
+    },
+    {
+      "field_key": "ss_career_avg_earnings",
+      "person": "self",
+      "data_source": "manual",
+      "completeness_core": false,
+      "ui_group": "tax_benefits",
+      "sources": [
+        {
+          "document_id": "manual_gaps",
+          "tier": "C",
+          "acquisition": "guided_fallback",
+          "ready": true
+        }
+      ]
+    },
+    {
+      "field_key": "ss_career_avg_earnings",
+      "person": "wife",
+      "data_source": "manual",
+      "completeness_core": false,
+      "ui_group": "tax_benefits",
+      "sources": [
+        {
+          "document_id": "manual_gaps",
+          "tier": "C",
+          "acquisition": "guided_fallback",
+          "ready": true
+        }
+      ]
+    },
+    {
+      "field_key": "roth_conversion_mode",
+      "person": "self",
+      "data_source": "manual",
+      "completeness_core": false,
+      "ui_group": "tax_benefits",
+      "sources": [
+        {
+          "document_id": "manual_gaps",
+          "tier": "C",
+          "acquisition": "guided_fallback",
+          "ready": true
+        }
+      ]
+    },
+    {
+      "field_key": "roth_conversion_mode",
+      "person": "wife",
+      "data_source": "manual",
+      "completeness_core": false,
+      "ui_group": "tax_benefits",
+      "sources": [
+        {
+          "document_id": "manual_gaps",
+          "tier": "C",
+          "acquisition": "guided_fallback",
+          "ready": true
+        }
+      ]
+    },
+    {
+      "field_key": "roth_conversion_annual",
+      "person": "self",
+      "data_source": "manual",
+      "completeness_core": false,
+      "ui_group": "tax_benefits",
+      "sources": [
+        {
+          "document_id": "manual_gaps",
+          "tier": "C",
+          "acquisition": "guided_fallback",
+          "ready": true
+        }
+      ]
+    },
+    {
+      "field_key": "roth_conversion_annual",
+      "person": "wife",
+      "data_source": "manual",
+      "completeness_core": false,
+      "ui_group": "tax_benefits",
+      "sources": [
+        {
+          "document_id": "manual_gaps",
+          "tier": "C",
+          "acquisition": "guided_fallback",
+          "ready": true
+        }
+      ]
+    },
+    {
+      "field_key": "roth_conversion_start_age",
+      "person": "self",
+      "data_source": "manual",
+      "completeness_core": false,
+      "ui_group": "tax_benefits",
+      "sources": [
+        {
+          "document_id": "manual_gaps",
+          "tier": "C",
+          "acquisition": "guided_fallback",
+          "ready": true
+        }
+      ]
+    },
+    {
+      "field_key": "roth_conversion_start_age",
+      "person": "wife",
+      "data_source": "manual",
+      "completeness_core": false,
+      "ui_group": "tax_benefits",
+      "sources": [
+        {
+          "document_id": "manual_gaps",
+          "tier": "C",
+          "acquisition": "guided_fallback",
+          "ready": true
+        }
+      ]
+    },
+    {
+      "field_key": "roth_conversion_end_age",
+      "person": "self",
+      "data_source": "manual",
+      "completeness_core": false,
+      "ui_group": "tax_benefits",
+      "sources": [
+        {
+          "document_id": "manual_gaps",
+          "tier": "C",
+          "acquisition": "guided_fallback",
+          "ready": true
+        }
+      ]
+    },
+    {
+      "field_key": "roth_conversion_end_age",
+      "person": "wife",
+      "data_source": "manual",
+      "completeness_core": false,
+      "ui_group": "tax_benefits",
+      "sources": [
+        {
+          "document_id": "manual_gaps",
+          "tier": "C",
+          "acquisition": "guided_fallback",
+          "ready": true
+        }
+      ]
+    }
+  ]
+}

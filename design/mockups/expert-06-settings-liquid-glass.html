@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Expert — Settings · Liquid Glass</title>
+  <link rel="stylesheet" href="liquid-glass.css" />
+  <style>
+    .select-wrap::after {
+      content: "";
+      position: absolute; right: 14px; top: 50%;
+      transform: translateY(-50%);
+      border-left: 4px solid transparent;
+      border-right: 4px solid transparent;
+      border-top: 5px solid rgba(255,255,255,0.5);
+      pointer-events: none;
+    }
+    .glass-input.year { width: 88px; }
+</style>
+</head>
+<body class="screen-body">
+  <div class="banner">Expert · Settings · <a href="expert-05-simulate-liquid-glass.html">← Simulate</a> 
+    <a href="expert-all-screens.html">All sections</a>
+    <a href="index.html">Index</a></div>
+
+  <div class="window expert-window">
+    <header class="header liquid">
+      <div class="header-left">
+        <span class="app-name">Retirement Planner</span>
+        <div class="pill-toggle">
+          <button type="button">Guided</button>
+          <button type="button" class="on">Expert</button>
+        </div>
+      </div>
+      <span class="build">UI Jun 23 · liquid glass</span>
+    </header>
+
+    <div class="expert-body">
+      <nav class="section-rail liquid" aria-label="Sections">
+        <span class="rail-label">Sections</span><button type="button" class="rail-link">Setup</button><button type="button" class="rail-link">Assumptions</button><button type="button" class="rail-link">AI Assistant</button><button type="button" class="rail-link">Live Data</button><button type="button" class="rail-link">Simulate</button><button type="button" class="rail-link on">Settings</button>
+      </nav>
+      <main class="expert-main">
+        <div class="expert-main-head">
+          <div>
+            <h1 class="expert-title">Settings</h1>
+            <p class="expert-subtitle">Integrations and app configuration</p>
+          </div>
+          <button type="button" class="link-guided">Jump to Guided →</button>
+        </div>
+        <div class="settings-list"><button type="button" class="connect-btn" style="width:100%;text-align:left">LLM Settings…</button><p class="caption" style="margin:0;padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.06)">Plaid: configured (.env)</p><p class="caption" style="margin:0;padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.06)">Presentation mode: Expert</p></div>
+      </main>
+    </div>
+
+    <div class="status-dock liquid">
+      <div class="status-copy">
+        <h2>Expert editor</h2>
+        <p>Settings</p>
+      </div>
+      <button type="button" class="btn btn-run">Run plan</button>
+    </div>
+  </div>
+</body>
+</html>

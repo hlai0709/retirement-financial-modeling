@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Screen 5 — Your Assets · Liquid Glass</title>
+  <link rel="stylesheet" href="liquid-glass.css" />
+  <style>
+    .select-wrap::after {
+      content: "";
+      position: absolute; right: 16px; top: 50%;
+      transform: translateY(-50%);
+      border-left: 4px solid transparent;
+      border-right: 4px solid transparent;
+      border-top: 5px solid rgba(255,255,255,0.5);
+      pointer-events: none;
+    }
+    .glass-input.year { width: 108px; }
+    .caption.tight { margin-top: 10px; }
+    .caption.loose { margin-top: 28px; }
+    .dots i { width: 14px; }
+    .ai-card {
+      position: relative;
+      text-align: left;
+      padding: 24px 28px 28px 84px;
+    }
+    .ai-card p { font-size: 14px; color: var(--secondary); margin-bottom: 20px; line-height: 1.55; }
+    .ai-actions {
+      display: flex;
+      justify-content: center;
+      margin: 4px calc(-28px) 0 calc(-56px);
+    }
+    .ai-icon {
+      position: absolute;
+      top: 22px;
+      left: 22px;
+      width: 48px; height: 48px;
+      margin: 0;
+      border-radius: 14px;
+      background: linear-gradient(135deg, rgba(90,200,250,0.35), rgba(175,82,222,0.25));
+      border: 1px solid rgba(255,255,255,0.2);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 22px;
+    }
+    .btn-skip-prominent {
+      background: rgba(255,255,255,0.16) !important;
+      border-color: rgba(255,255,255,0.28) !important;
+    }
+</style>
+</head>
+<body class="screen-body">
+  <div class="banner">Screen 5 — Your Assets ·
+    <a href="screen-04-spouse-income-liquid-glass.html">← Screen 4</a>
+    <a href="screen-06-spouse-assets-liquid-glass.html">Screen 6 →</a>
+    <a href="guided-all-screens.html">All screens</a>
+    <a href="index.html">Index</a></div>
+
+  <div class="window">
+    <header class="header liquid">
+      <div class="header-left">
+        <span class="app-name">Retirement Planner</span>
+        <div class="pill-toggle">
+          <button type="button" class="on">Guided</button>
+          <button type="button">Expert</button>
+        </div>
+      </div>
+      <span class="build">UI Jun 23 · liquid glass</span>
+    </header>
+
+    <main class="main">
+      <div class="step-row">
+        <h1 class="step-title">Your Assets</h1>
+        <button type="button" class="btn-help" id="help-open">Help</button>
+      </div>
+      <div class="content-glass liquid liquid-strong"><div class="glass-inner"><p class="q-label"><span>1.</span>What are your total investable assets today?</p><div class="input-dollar"><span class="prefix">$</span><input type="text" value="1,240,000" readonly /></div></div><div class="glass-inner"><p class="q-label"><span>2.</span>How much is in taxable brokerage accounts?</p><div class="input-dollar"><span class="prefix">$</span><input type="text" value="480,000" readonly /></div></div><div class="glass-inner"><p class="q-label"><span>3.</span>What is your traditional IRA / 401(k) balance?</p><div class="input-dollar"><span class="prefix">$</span><input type="text" value="620,000" readonly /></div></div><div class="glass-inner"><p class="q-label"><span>4.</span>What is your Roth IRA / Roth 401(k) balance?</p><div class="input-dollar"><span class="prefix">$</span><input type="text" value="140,000" readonly /></div></div></div>
+    </main>
+
+    <div class="chrome-dock liquid">
+      <div class="step-footer">
+        <div class="footer-left">
+          <button type="button" class="btn btn-secondary">← Back</button>
+          <button type="button" class="btn btn-secondary">Skip for now</button>
+        </div>
+        <button type="button" class="btn btn-primary">Continue →</button>
+      </div>
+      <div class="progress-strip">
+        <span>Step 5 of 16</span>
+        <div class="dots"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+        <span>Money in</span>
+      </div>
+    </div>
+    <div class="help-backdrop" id="backdrop"></div>
+    <aside class="help-panel liquid liquid-strong" id="panel">
+      <div class="help-head"><span>Help — Your Assets</span><button type="button" class="btn-x" id="help-close">✕</button></div>
+      <div class="help-body"><div class="help-item"><h3>1 · Total assets</h3><p>All investable savings today — brokerage, IRA, Roth, etc.</p></div><div class="help-item"><h3>2 · Taxable</h3><p>Non-retirement brokerage accounts subject to capital gains.</p></div><div class="help-item"><h3>3 · Traditional</h3><p>Pre-tax retirement accounts — withdrawals taxed as ordinary income.</p></div><div class="help-item"><h3>4 · Roth</h3><p>After-tax retirement accounts — qualified withdrawals are tax-free.</p></div></div>
+    </aside>
+  </div>
+
+  <script>
+    const p = document.getElementById('panel'), b = document.getElementById('backdrop');
+    document.getElementById('help-open').onclick = () => { p.classList.add('open'); b.classList.add('open'); };
+    document.getElementById('help-close').onclick = () => { p.classList.remove('open'); b.classList.remove('open'); };
+    b.onclick = () => { p.classList.remove('open'); b.classList.remove('open'); };
+  </script>
+</body>
+</html>

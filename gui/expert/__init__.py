@@ -1,0 +1,1 @@
+"""Expert mode — direct grouped field entry."""

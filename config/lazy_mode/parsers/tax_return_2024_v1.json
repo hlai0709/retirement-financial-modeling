@@ -1,0 +1,27 @@
+{
+  "parser_id": "tax_return",
+  "config_version": "2024_v1",
+  "description": "Form 1040 line patterns for text-based PDF exports. Update when IRS line numbers or TurboTax layout changes.",
+  "line_patterns": {
+    "1z": "income.wages",
+    "2b": "income.taxable_interest",
+    "3b": "income.ordinary_dividends",
+    "4b": "income.ira_distributions",
+    "5b": "income.pension",
+    "6b": "income.social_security_gross",
+    "7": "income.capital_gain",
+    "11": "form_1040.agi",
+    "15": "form_1040.taxable_income",
+    "16": "form_1040.income_tax",
+    "24": "form_1040.total_tax"
+  },
+  "label_patterns": {
+    "wages, tips, other compensation": "income.wages",
+    "adjusted gross income": "form_1040.agi",
+    "taxable income": "form_1040.taxable_income",
+    "home mortgage interest": "itemized.mortgage_interest",
+    "state and local taxes": "itemized.salt",
+    "state and local real estate taxes": "itemized.real_estate_taxes",
+    "real estate taxes": "itemized.real_estate_taxes"
+  }
+}

@@ -1,0 +1,31 @@
+{
+  "schema_version": 1,
+  "label": "2024 MFJ — W-2 wages only (regression fixture)",
+  "tax_year": 2024,
+  "filing_status": "mfj",
+  "state_of_residence": "CA",
+  "planning_precision": "standard",
+  "tax_mode": "federal_brackets",
+  "state_tax_enabled": false,
+  "income": {
+    "wages": 100000,
+    "taxable_interest": 0,
+    "ordinary_dividends": 0,
+    "ira_distributions": 0,
+    "pension": 0,
+    "social_security_gross": 0,
+    "capital_gain": 0,
+    "rental_income": 0
+  },
+  "form_1040": {
+    "agi": 100000,
+    "taxable_income": 70800,
+    "income_tax": 8032,
+    "total_tax": 8032
+  },
+  "tolerance": {
+    "federal_tax": 25,
+    "agi": 1,
+    "taxable_income": 1
+  }
+}
