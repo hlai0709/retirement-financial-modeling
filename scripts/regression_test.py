@@ -3264,7 +3264,15 @@ def run_regression() -> RegressionReport:
         still_review.set_source("self", "property_tax_annual", "Expense review")
         still_review.persons["self"]["_expense_review_base"] = "10400"
         still_load = PlanningSnapshot.from_dict(still_review.to_dict())
-        assert still_load.to_simulation_params()["persons"]["self"]["base_expenses"] == 2400
+        assert still_load.base_excludes_property_tax is True
+        assert still_load.to_simulation_params()["persons"]["self"]["base_expenses"] == 10400
+
+        from app.core.presentation.live_data_ops import apply_owner_expenses
+
+        recorded_apply = PlanningSnapshot()
+        apply_owner_expenses(recorded_apply, {"self": 2400.0, "wife": 0.0})
+        assert recorded_apply.base_excludes_property_tax is True
+        assert float(recorded_apply.persons["self"]["_expense_review_base"]) == 2400
 
         applied_snapshot = PlanningSnapshot()
         applied = apply_spending_builder(

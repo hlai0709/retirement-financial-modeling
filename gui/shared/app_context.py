@@ -148,6 +148,7 @@ class AppContext:
                 self.binder.snapshot.persons[person]["_expense_review_base"] = (
                     self.binder.snapshot.get_raw(expense_field, person=person)
                 )
+                self.binder.snapshot.base_excludes_property_tax = True
             else:
                 self.binder.set_source(person, expense_field.key, "Manual")
 

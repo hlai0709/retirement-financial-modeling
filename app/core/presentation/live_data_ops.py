@@ -754,8 +754,9 @@ def apply_owner_expenses(
         if value:
             snapshot.set_raw(expense_field, str(value), person=person)
             snapshot.set_source(person, expense_field.key, source)
-            # What this apply wrote, so a later hand edit is not treated as the old total.
+            # What this apply wrote. This version already leaves property tax out.
             snapshot.persons[person]["_expense_review_base"] = str(value)
+            snapshot.base_excludes_property_tax = True
         else:
             snapshot.set_source(person, expense_field.key, "Manual")
 
