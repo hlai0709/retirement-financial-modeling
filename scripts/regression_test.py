@@ -3220,6 +3220,29 @@ def run_regression() -> RegressionReport:
         again = PlanningSnapshot.from_dict(loaded.to_dict())
         assert again.to_simulation_params()["persons"]["self"]["base_expenses"] == 99999
 
+        hand_edited = PlanningSnapshot()
+        hand_edited.spending_breakdown = {
+            "self": {"food": 60000, "healthcare": 5000, "property_tax": 8000},
+        }
+        hand_edited.set_raw(FIELDS_BY_KEY["base_expenses"], "50000", person="self")
+        hand_edited.set_source("self", "base_expenses", "Spending builder")
+        hand_edited.set_raw(FIELDS_BY_KEY["property_tax_annual"], "8000", person="self")
+        edited_load = PlanningSnapshot.from_dict(hand_edited.to_dict())
+        assert edited_load.base_excludes_property_tax is True
+        assert edited_load.to_simulation_params()["persons"]["self"]["base_expenses"] == 50000
+
+        reviewed = PlanningSnapshot()
+        reviewed.spending_breakdown = {"self": {"utilities": 2400, "property_tax": 8000}}
+        reviewed.set_raw(FIELDS_BY_KEY["base_expenses"], "10400", person="self")
+        reviewed.set_source("self", "base_expenses", "Plaid transactions (2026-01-01)")
+        reviewed.set_raw(FIELDS_BY_KEY["property_tax_annual"], "8000", person="self")
+        reviewed.set_source("self", "property_tax_annual", "Expense review")
+        reviewed_load = PlanningSnapshot.from_dict(reviewed.to_dict())
+        assert reviewed_load.to_simulation_params()["persons"]["self"]["base_expenses"] == 2400
+        assert reviewed_load.to_simulation_params()["persons"]["self"]["property_tax_annual"] == 8000
+        reviewed_again = PlanningSnapshot.from_dict(reviewed_load.to_dict())
+        assert reviewed_again.to_simulation_params()["persons"]["self"]["base_expenses"] == 2400
+
         applied_snapshot = PlanningSnapshot()
         applied = apply_spending_builder(
             applied_snapshot,
@@ -5825,6 +5848,47 @@ def run_regression() -> RegressionReport:
         "GUI",
         "Expense review keeps property tax separate",
         check_expense_review_keeps_property_tax_separate,
+    )
+
+    def check_old_expense_review_base_is_saved_on_load():
+        import json
+        import tempfile
+        from pathlib import Path
+        from unittest.mock import patch
+
+        from app.core.planning_snapshot import PlanningSnapshot
+        from app.core.presentation import PlanningSession
+        from app.core.session_store import draft_path, save_planning_snapshot
+        from config.model_fields import FIELDS_BY_KEY
+
+        with tempfile.TemporaryDirectory() as tmp:
+            data_dir = Path(tmp)
+            with (
+                patch("app.core.session_store.app_data_dir", return_value=data_dir),
+                patch("settings.app_data_dir", return_value=data_dir),
+            ):
+                saved = PlanningSnapshot()
+                saved.spending_breakdown = {"self": {"utilities": 2400, "property_tax": 8000}}
+                saved.set_raw(FIELDS_BY_KEY["base_expenses"], "10400", person="self")
+                saved.set_source("self", "base_expenses", "Plaid transactions")
+                saved.set_raw(FIELDS_BY_KEY["property_tax_annual"], "8000", person="self")
+                saved.set_source("self", "property_tax_annual", "Expense review")
+                save_planning_snapshot(saved)
+                session = PlanningSession.from_preferences()
+                assert session.snapshot.base_excludes_property_tax is True
+                assert float(session.snapshot.persons["self"]["base_expenses"]) == 2400
+                draft = json.loads(draft_path().read_text(encoding="utf-8"))
+                assert draft["base_excludes_property_tax"] is True
+                assert draft["persons"]["self"]["base_expenses"] == "2400"
+                again = PlanningSession.from_preferences()
+                assert float(again.snapshot.persons["self"]["base_expenses"]) == 2400
+        return "an old expense-review base drops property tax once and saves it"
+
+    _run_check(
+        report,
+        "GUI",
+        "Old expense-review base is saved on load",
+        check_old_expense_review_base_is_saved_on_load,
     )
 
     def check_past_marriage_year_runs():

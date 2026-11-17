@@ -1126,29 +1126,55 @@ def suggest_spending_averages_with_llm(
 
 
 def migrate_base_excludes_property_tax(snapshot: PlanningSnapshot) -> bool:
-    """Rewrite a Spending-builder base so property tax and healthcare stay out.
+    """Take property tax, and healthcare, out of an old base. Once.
 
-    One shot, when a saved plan has no marker. The new base is the saved
-    breakdown summed with counts_toward_base. Later loads leave it alone.
+    A Spending-builder base is rewritten only when it still matches an old
+    builder total: base living plus the tax, healthcare, or both, within $1.
+    A hand edit, or an AI fill that was never applied, is left alone.
+
+    An expense-review base whose source starts with "Plaid transactions",
+    and whose property tax came from "Expense review", drops that tax once.
+
+    The marker is set either way. Later loads leave the base alone.
     """
     if snapshot.base_excludes_property_tax:
         return False
     changed = False
     base_field = FIELDS_BY_KEY["base_expenses"]
     for person in ("self", "wife"):
-        if snapshot.get_source(person, "base_expenses") != "Spending builder":
-            continue
+        src = snapshot.get_source(person, "base_expenses")
         breakdown = (snapshot.spending_breakdown or {}).get(person) or {}
-        if not breakdown:
-            continue
-        total = sum(
-            _money(amount)
-            for cid, amount in breakdown.items()
-            if counts_toward_base(str(cid))
-        )
-        snapshot.set_raw(base_field, format_field_value(base_field, total), person=person)
-        changed = True
+        base = _money((snapshot.persons.get(person) or {}).get("base_expenses"))
+        if src == "Spending builder":
+            if not breakdown:
+                continue
+            kept = sum(
+                _money(amount)
+                for cid, amount in breakdown.items()
+                if counts_toward_base(str(cid))
+            )
+            tax = _money(breakdown.get("property_tax"))
+            health = _money(breakdown.get("healthcare"))
+            old_totals = (kept + tax, kept + health, kept + tax + health)
+            if any(abs(base - total) < 1.0 for total in old_totals) and (tax or health):
+                snapshot.set_raw(
+                    base_field, format_field_value(base_field, kept), person=person
+                )
+                changed = True
+        elif src.startswith("Plaid transactions") and snapshot.get_source(
+            person, "property_tax_annual"
+        ) == "Expense review":
+            tax = _money(breakdown.get("property_tax"))
+            if tax > 0:
+                snapshot.set_raw(
+                    base_field,
+                    format_field_value(base_field, max(0.0, base - tax)),
+                    person=person,
+                )
+                changed = True
     snapshot.base_excludes_property_tax = True
+    # from_dict runs this before the session can see a return value.
+    snapshot.base_tax_migration_needs_save = True
     return changed
 
 

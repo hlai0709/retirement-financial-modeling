@@ -129,6 +129,8 @@ class PlanningSession:
         dirty = False
         if normalize_stored_marriage(session.snapshot):
             dirty = True
+        if restored and getattr(session.snapshot, "base_tax_migration_needs_save", False):
+            dirty = True
         if session.snapshot.sanitize_invalid_year_fields():
             dirty = True
         if apply_derived_fields(session.snapshot):
