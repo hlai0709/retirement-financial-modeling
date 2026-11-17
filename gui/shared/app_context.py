@@ -145,6 +145,9 @@ class AppContext:
             value = totals.get(person, 0.0)
             if value:
                 self.binder.set_value(expense_field, value, person=person, source=source)
+                self.binder.snapshot.persons[person]["_expense_review_base"] = (
+                    self.binder.snapshot.get_raw(expense_field, person=person)
+                )
             else:
                 self.binder.set_source(person, expense_field.key, "Manual")
 

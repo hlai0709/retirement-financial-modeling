@@ -3243,6 +3243,29 @@ def run_regression() -> RegressionReport:
         reviewed_again = PlanningSnapshot.from_dict(reviewed_load.to_dict())
         assert reviewed_again.to_simulation_params()["persons"]["self"]["base_expenses"] == 2400
 
+        edited_after_review = PlanningSnapshot()
+        edited_after_review.spending_breakdown = {
+            "self": {"utilities": 2400, "property_tax": 8000},
+        }
+        edited_after_review.set_raw(FIELDS_BY_KEY["base_expenses"], "9000", person="self")
+        edited_after_review.set_source("self", "base_expenses", "Plaid transactions")
+        edited_after_review.set_raw(FIELDS_BY_KEY["property_tax_annual"], "8000", person="self")
+        edited_after_review.set_source("self", "property_tax_annual", "Expense review")
+        edited_after_review.persons["self"]["_expense_review_base"] = "10400"
+        edited_review_load = PlanningSnapshot.from_dict(edited_after_review.to_dict())
+        assert edited_review_load.base_excludes_property_tax is True
+        assert edited_review_load.to_simulation_params()["persons"]["self"]["base_expenses"] == 9000
+
+        still_review = PlanningSnapshot()
+        still_review.spending_breakdown = {"self": {"utilities": 2400, "property_tax": 8000}}
+        still_review.set_raw(FIELDS_BY_KEY["base_expenses"], "10400", person="self")
+        still_review.set_source("self", "base_expenses", "Plaid transactions")
+        still_review.set_raw(FIELDS_BY_KEY["property_tax_annual"], "8000", person="self")
+        still_review.set_source("self", "property_tax_annual", "Expense review")
+        still_review.persons["self"]["_expense_review_base"] = "10400"
+        still_load = PlanningSnapshot.from_dict(still_review.to_dict())
+        assert still_load.to_simulation_params()["persons"]["self"]["base_expenses"] == 2400
+
         applied_snapshot = PlanningSnapshot()
         applied = apply_spending_builder(
             applied_snapshot,
@@ -5841,6 +5864,8 @@ def run_regression() -> RegressionReport:
         assert base == 2400, base
         assert tax == 8000, tax
         assert session.snapshot.base_excludes_property_tax is True
+        recorded = float(session.snapshot.persons["self"]["_expense_review_base"])
+        assert recorded == 2400, recorded
         return "expense review keeps property tax out of base"
 
     _run_check(

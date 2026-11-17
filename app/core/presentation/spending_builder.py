@@ -1134,6 +1134,8 @@ def migrate_base_excludes_property_tax(snapshot: PlanningSnapshot) -> bool:
 
     An expense-review base whose source starts with "Plaid transactions",
     and whose property tax came from "Expense review", drops that tax once.
+    It does so only when the recorded review total is missing, or still
+    matches the current base within $1. A later hand edit is left alone.
 
     The marker is set either way. Later loads leave the base alone.
     """
@@ -1165,7 +1167,10 @@ def migrate_base_excludes_property_tax(snapshot: PlanningSnapshot) -> bool:
             person, "property_tax_annual"
         ) == "Expense review":
             tax = _money(breakdown.get("property_tax"))
-            if tax > 0:
+            recorded = (snapshot.persons.get(person) or {}).get("_expense_review_base")
+            recorded_text = str(recorded).strip() if recorded is not None else ""
+            still_review_total = recorded_text == "" or abs(base - _money(recorded_text)) < 1.0
+            if tax > 0 and still_review_total:
                 snapshot.set_raw(
                     base_field,
                     format_field_value(base_field, max(0.0, base - tax)),
