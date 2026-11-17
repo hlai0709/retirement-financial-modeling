@@ -163,7 +163,7 @@ def owner_totals_from_line_items(
 
     When ``base_living_only`` is True (expense → Base Expenses apply), only count:
     recurring bills (utilities/insurance/…) + food + dining + entertainment + travel.
-    Mortgage / other / education are ignored even if checked.
+    Mortgage, property tax, healthcare, other, and education are ignored even if checked.
     """
     from app.core.presentation.spending_builder import (
         BASE_EXPENSE_CATEGORIES,
@@ -171,6 +171,7 @@ def owner_totals_from_line_items(
         BASE_RECURRING_CATEGORIES,
         IGNORE_FOR_BASE_CATEGORIES,
         _PLAID_TO_BUILDER,
+        counts_toward_base,
     )
 
     skip = frozenset(exclude_categories or {"mortgage"})
@@ -192,10 +193,10 @@ def owner_totals_from_line_items(
             in_recurring_cat = (
                 cat in BASE_RECURRING_CATEGORIES or builder_cat in BASE_RECURRING_CATEGORIES
             )
-            # Healthcare has its own premium fields. One-off travel is not a bill.
-            # A checked insurance or utility row still counts when the detector
-            # called it variable (annual policies are not monthly).
-            if builder_cat == "healthcare" or cat == "healthcare":
+            # Healthcare and property tax have their own plan fields. One-off
+            # travel is not a bill. A checked insurance or utility row still
+            # counts when the detector called it variable.
+            if not counts_toward_base(builder_cat):
                 continue
             if (builder_cat == "travel" or cat == "travel") and expense_type != "recurring":
                 continue
@@ -222,6 +223,7 @@ def base_living_category_breakdown(rows: list[dict[str, Any]]) -> dict[str, floa
         BASE_RECURRING_CATEGORIES,
         IGNORE_FOR_BASE_CATEGORIES,
         _PLAID_TO_BUILDER,
+        counts_toward_base,
     )
 
     by_cat: dict[str, float] = {}
@@ -235,7 +237,7 @@ def base_living_category_breakdown(rows: list[dict[str, Any]]) -> dict[str, floa
         expense_type = str(row.get("expense_type") or "").lower()
         in_lifestyle = builder_cat in BASE_LIFESTYLE_CATEGORIES
         in_recurring_cat = builder_cat in BASE_RECURRING_CATEGORIES
-        if builder_cat == "healthcare":
+        if not counts_toward_base(builder_cat):
             continue
         if builder_cat == "travel" and expense_type != "recurring":
             continue
@@ -492,8 +494,8 @@ def serialize_expense_review(snapshot: ExpenseSnapshot, household_mode: str) -> 
             f"{analysis.months_analyzed:.1f} months. "
             f"{recurring_n} recurring · {one_off_n} variable/one-off "
             f"({excluded_n} unchecked — credit-card payments omitted). "
-            "Base Expenses = recurring bills + food + dining + entertainment + travel "
-            "(ignores other / education / mortgage)."
+            "Base Expenses = recurring bills + food + dining + entertainment + travel. "
+            "Property tax is kept separate, as are healthcare, mortgage, other, and education."
         ),
         "as_of": snapshot.as_of,
         "rows": rows,

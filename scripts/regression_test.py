@@ -3196,33 +3196,38 @@ def run_regression() -> RegressionReport:
         assert abs(float(tax_2027["Expenses"]) - (30_000 * 1.10 + 8_000 * 1.10)) < 1.0, tax_2027["Expenses"]
 
         from app.core.planning_snapshot import PlanningSnapshot
-        from app.core.presentation.spending_builder import (
-            apply_spending_builder,
-            property_tax_folded_into_base,
-        )
+        from app.core.presentation.spending_builder import apply_spending_builder
         from config.model_fields import FIELDS_BY_KEY
 
         fresh = PlanningSnapshot()
         fresh.set_raw(FIELDS_BY_KEY["base_expenses"], "60000", person="self")
         fresh.set_raw(FIELDS_BY_KEY["property_tax_annual"], "8000", person="self")
-        assert property_tax_folded_into_base(fresh, "self") == 0
         assert fresh.to_simulation_params()["persons"]["self"]["property_tax_annual"] == 8000
         assert fresh.to_simulation_params()["persons"]["self"]["base_expenses"] == 60000
 
         folded = PlanningSnapshot()
-        folded.spending_breakdown = {"self": {"food": 60000, "property_tax": 8000}}
-        folded.set_raw(FIELDS_BY_KEY["base_expenses"], "68000", person="self")
+        folded.spending_breakdown = {
+            "self": {"food": 60000, "healthcare": 5000, "property_tax": 8000},
+        }
+        folded.set_raw(FIELDS_BY_KEY["base_expenses"], "73000", person="self")
         folded.set_source("self", "base_expenses", "Spending builder")
         folded.set_raw(FIELDS_BY_KEY["property_tax_annual"], "8000", person="self")
-        assert property_tax_folded_into_base(folded, "self") == 8000
-        assert folded.to_simulation_params()["persons"]["self"]["base_expenses"] == 60000
+        loaded = PlanningSnapshot.from_dict(folded.to_dict())
+        assert loaded.base_excludes_property_tax is True
+        assert loaded.to_simulation_params()["persons"]["self"]["base_expenses"] == 60000
+        assert loaded.to_simulation_params()["persons"]["self"]["property_tax_annual"] == 8000
+        loaded.set_raw(FIELDS_BY_KEY["base_expenses"], "99999", person="self")
+        again = PlanningSnapshot.from_dict(loaded.to_dict())
+        assert again.to_simulation_params()["persons"]["self"]["base_expenses"] == 99999
 
+        applied_snapshot = PlanningSnapshot()
         applied = apply_spending_builder(
-            PlanningSnapshot(),
+            applied_snapshot,
             person="self",
             amounts={"food": 60000, "property_tax": 8000},
         )
         assert applied["base_expenses"] == 60000
+        assert applied_snapshot.base_excludes_property_tax is True
         return "mortgage + one-time expense timing OK; property tax is added once"
 
     _run_check(report, "Phase 6", "Mortgage and one-time expense", check_mortgage_and_one_time_expense)
@@ -5710,6 +5715,12 @@ def run_regression() -> RegressionReport:
             [{"key": "annual_contributions", "value": "20000", "person": "self"}],
         )
         assert field_is_example(snapshot, contrib, person="self")
+        snapshot.field_sources[snapshot.source_key("self", "annual_contributions")] = "Manual"
+        assert field_is_example(snapshot, contrib, person="self")
+        snapshot.field_sources[snapshot.source_key("self", "annual_contributions")] = "Pay stub"
+        assert not field_is_example(snapshot, contrib, person="self")
+        snapshot.field_sources.pop(snapshot.source_key("self", "annual_contributions"), None)
+        assert field_is_example(snapshot, contrib, person="self")
         touched_review = build_guided_screen(snapshot, workflow, index=workflow.index_of("review"))
         assert any(
             row["field_key"] == "annual_contributions" and row["person"] == "self"
@@ -5769,6 +5780,83 @@ def run_regression() -> RegressionReport:
         return "spouse age, marriage, housing, examples, headline"
 
     _run_check(report, "GUI", "Guided screen recommendations", check_guided_screen_recommendations)
+
+    def check_expense_review_keeps_property_tax_separate():
+        from unittest.mock import patch
+
+        from app.core.planning_snapshot import PlanningSnapshot
+        from app.core.presentation import PlanningSession
+        from config.model_fields import FIELDS_BY_KEY
+
+        session = PlanningSession(PlanningSnapshot())
+        session._persist = lambda: None
+        rows = [
+            {
+                "included": True,
+                "owner": "self",
+                "category": "property_tax",
+                "expense_type": "recurring",
+                "annual_amount": 8000,
+                "merchant": "County",
+            },
+            {
+                "included": True,
+                "owner": "self",
+                "category": "utilities",
+                "expense_type": "recurring",
+                "annual_amount": 2400,
+                "merchant": "Power",
+            },
+        ]
+        with patch("app.core.presentation.planning_session.DataService") as service:
+            service.return_value.load_cached_expense_snapshot.return_value = None
+            result = session.apply_expenses_review(rows)
+        assert result["ok"], result
+        assert "property tax" in result["message"].lower()
+        base = float(session.snapshot.get_raw(FIELDS_BY_KEY["base_expenses"], person="self"))
+        tax = float(session.snapshot.get_raw(FIELDS_BY_KEY["property_tax_annual"], person="self"))
+        assert base == 2400, base
+        assert tax == 8000, tax
+        assert session.snapshot.base_excludes_property_tax is True
+        return "expense review keeps property tax out of base"
+
+    _run_check(
+        report,
+        "GUI",
+        "Expense review keeps property tax separate",
+        check_expense_review_keeps_property_tax_separate,
+    )
+
+    def check_past_marriage_year_runs():
+        import tempfile
+        from pathlib import Path
+        from unittest.mock import patch
+
+        from app.core.planning_snapshot import PlanningSnapshot
+        from app.core.presentation import PlanningSession
+        from app.core.session_store import save_planning_snapshot
+        from model import run_retirement_projection
+
+        with tempfile.TemporaryDirectory() as tmp:
+            data_dir = Path(tmp)
+            with (
+                patch("app.core.session_store.app_data_dir", return_value=data_dir),
+                patch("settings.app_data_dir", return_value=data_dir),
+            ):
+                saved = PlanningSnapshot(household_mode="joint")
+                saved.shared["marriage_year"] = "2010"
+                saved.shared["filing_status"] = "single"
+                save_planning_snapshot(saved)
+                session = PlanningSession.from_preferences()
+                assert session.snapshot.shared["marriage_year"] == ""
+                assert session.snapshot.shared["filing_status"] == "mfj"
+                assert session.snapshot.shared["filing_status_after_marriage"] == "mfj"
+                params = session.snapshot.to_simulation_params()
+                df = run_retirement_projection(params)["joint"]
+                assert str(df.iloc[0]["Filing_Status"]).lower() == "mfj"
+        return "a past marriage year loads as jointly and runs"
+
+    _run_check(report, "GUI", "Past marriage year runs", check_past_marriage_year_runs)
 
     def check_workflow_spouse_steps():
         from app.core.workflow_definition import WorkflowDefinition

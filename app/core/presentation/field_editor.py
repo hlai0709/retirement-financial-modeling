@@ -126,7 +126,8 @@ def field_is_example(
     if field.field_type not in {"money", "age"}:
         return False
     scope_person = person if field.scope == "person" else None
-    if snapshot.source_key(scope_person, field.key) in snapshot.field_sources:
+    source = snapshot.field_sources.get(snapshot.source_key(scope_person, field.key), "")
+    if source and source != "Manual":
         return False
     raw = snapshot.get_raw(field, person=scope_person).strip().replace(",", "").replace("$", "")
     default = str(default_display_value(field, person=scope_person) or "").strip().replace(",", "")

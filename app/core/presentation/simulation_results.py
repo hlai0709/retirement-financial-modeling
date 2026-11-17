@@ -308,7 +308,10 @@ def results_headline(
     deterministic = primary.get("deterministic") or {}
     status = str((adviser or {}).get("goal_status") or "")
     adviser_ok = bool((adviser or {}).get("ok"))
-    joint = household_mode == "joint" or any(tab.get("key") == "joint" for tab in tabs)
+    if household_mode in {"joint", "separate"}:
+        joint = household_mode == "joint"
+    else:
+        joint = any(tab.get("key") == "joint" for tab in tabs)
     monte_present = bool(monte)
     ending = float(deterministic.get("ending_balance") or 0) if deterministic else 0.0
     det_lasts = (
@@ -397,7 +400,7 @@ def serialize_simulation_result(
         "headline": results_headline(
             adviser=adviser,
             tabs=tabs,
-            household_mode=str(output.mode or ""),
+            household_mode=str((payload.params or {}).get("mode") or ""),
         ),
         "warnings": payload.warnings,
         "alerts": alerts,

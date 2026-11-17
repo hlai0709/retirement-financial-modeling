@@ -1125,30 +1125,31 @@ def suggest_spending_averages_with_llm(
     }
 
 
-def property_tax_folded_into_base(snapshot: PlanningSnapshot, person: str) -> float:
-    """Property tax an older Spending builder apply already summed into base.
+def migrate_base_excludes_property_tax(snapshot: PlanningSnapshot) -> bool:
+    """Rewrite a Spending-builder base so property tax and healthcare stay out.
 
-    Current applies keep the tax out of base. An older saved plan still has it
-    inside base when that base equals the builder total, tax line included.
+    One shot, when a saved plan has no marker. The new base is the saved
+    breakdown summed with counts_toward_base. Later loads leave it alone.
     """
-    if person not in {"self", "wife"}:
-        return 0.0
-    breakdown = (getattr(snapshot, "spending_breakdown", None) or {}).get(person) or {}
-    tax = _money(breakdown.get("property_tax"))
-    if tax <= 0:
-        return 0.0
-    if snapshot.get_source(person, "base_expenses") != "Spending builder":
-        return 0.0
-    expected = tax
-    for cid, amount in breakdown.items():
-        if str(cid) == "property_tax":
+    if snapshot.base_excludes_property_tax:
+        return False
+    changed = False
+    base_field = FIELDS_BY_KEY["base_expenses"]
+    for person in ("self", "wife"):
+        if snapshot.get_source(person, "base_expenses") != "Spending builder":
             continue
-        if counts_toward_base(str(cid)):
-            expected += _money(amount)
-    base = _money((snapshot.persons.get(person) or {}).get("base_expenses"))
-    if abs(base - expected) < 1.0:
-        return tax
-    return 0.0
+        breakdown = (snapshot.spending_breakdown or {}).get(person) or {}
+        if not breakdown:
+            continue
+        total = sum(
+            _money(amount)
+            for cid, amount in breakdown.items()
+            if counts_toward_base(str(cid))
+        )
+        snapshot.set_raw(base_field, format_field_value(base_field, total), person=person)
+        changed = True
+    snapshot.base_excludes_property_tax = True
+    return changed
 
 
 def apply_spending_builder(
@@ -1208,6 +1209,7 @@ def apply_spending_builder(
     if not hasattr(snapshot, "spending_breakdown") or snapshot.spending_breakdown is None:
         snapshot.spending_breakdown = {}
     snapshot.spending_breakdown[person] = cleaned
+    snapshot.base_excludes_property_tax = True
 
     healthcare_note = ""
     healthcare = cleaned.get("healthcare", 0.0)

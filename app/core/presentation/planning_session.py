@@ -37,7 +37,11 @@ from app.core.presentation.llm_panel import apply_llm_suggestions, build_llm_pan
 from app.core.presentation.data_sources_summary import build_data_sources_summary
 from app.core.presentation.field_derived import apply_derived_fields
 from app.core.presentation.field_validation import validate_guided_step, validate_updates
-from app.core.presentation.marriage_answer import apply_marriage_answer, catalog_updates_for_marriage
+from app.core.presentation.marriage_answer import (
+    apply_marriage_answer,
+    catalog_updates_for_marriage,
+    normalize_stored_marriage,
+)
 from app.core.presentation.plan_completeness import (
     build_journey_rail,
     compute_completeness,
@@ -123,6 +127,8 @@ class PlanningSession:
         if restored:
             seed_touched_fields_from_snapshot(session.snapshot)
         dirty = False
+        if normalize_stored_marriage(session.snapshot):
+            dirty = True
         if session.snapshot.sanitize_invalid_year_fields():
             dirty = True
         if apply_derived_fields(session.snapshot):
@@ -1156,6 +1162,7 @@ class PlanningSession:
             apply_owner_expenses(self.snapshot, totals, expense_snapshot=cached)
             healthcare = copy_healthcare_from_expense_rows(self.snapshot, rows)
             sync_expense_rows_into_spending_breakdown(self.snapshot, rows)
+            self.snapshot.base_excludes_property_tax = True
             self._persist()
             parts = ", ".join(f"{k} ${v:,.0f}" for k, v in list(breakdown.items())[:8])
             health_note = ""
@@ -1165,8 +1172,8 @@ class PlanningSession:
             return {
                 "ok": True,
                 "message": (
-                    f"Base Expenses = recurring bills + food + dining + entertainment + travel "
-                    f"(ignores other/education/mortgage/healthcare). "
+                    f"Base Expenses = recurring bills + food + dining + entertainment + travel. "
+                    f"Property tax is kept separate, as are healthcare, mortgage, other, and education. "
                     f"Self ${totals.get('self', 0):,.0f}, wife ${totals.get('wife', 0):,.0f}"
                     + (f" · {parts}" if parts else "")
                     + health_note

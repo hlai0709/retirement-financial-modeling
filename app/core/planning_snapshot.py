@@ -75,6 +75,8 @@ class PlanningSnapshot:
     document_library: list[dict[str, Any]] = field(default_factory=list)
     # Per-person annual spending category breakdown from the spending builder UI.
     spending_breakdown: dict[str, dict[str, Any]] = field(default_factory=dict)
+    # Set once base living no longer includes property tax or healthcare.
+    base_excludes_property_tax: bool = False
 
     def __post_init__(self) -> None:
         if not self.shared:
@@ -181,14 +183,6 @@ class PlanningSnapshot:
                 field.key: parse_field_value(field, self.persons[person].get(field.key, ""))
                 for field in PERSON_FIELDS
             }
-        from app.core.presentation.spending_builder import property_tax_folded_into_base
-
-        for person in PERSONS:
-            folded = property_tax_folded_into_base(self, person)
-            if folded <= 0:
-                continue
-            base = float(params["persons"][person].get("base_expenses") or 0)
-            params["persons"][person]["base_expenses"] = max(0.0, base - folded)
         return params
 
     def to_dict(self) -> dict[str, Any]:
@@ -209,6 +203,7 @@ class PlanningSnapshot:
                 person: dict(values)
                 for person, values in (self.spending_breakdown or {}).items()
             },
+            "base_excludes_property_tax": bool(self.base_excludes_property_tax),
         }
 
     @classmethod
@@ -230,8 +225,12 @@ class PlanningSnapshot:
                 for person, values in (data.get("spending_breakdown") or {}).items()
                 if isinstance(values, dict)
             },
+            base_excludes_property_tax=data.get("base_excludes_property_tax") is True,
         )
         snapshot.__post_init__()
+        from app.core.presentation.spending_builder import migrate_base_excludes_property_tax
+
+        migrate_base_excludes_property_tax(snapshot)
         return snapshot
 
     def save_json(self, path: Path) -> None:

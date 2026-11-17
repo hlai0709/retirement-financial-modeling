@@ -62,6 +62,23 @@ def marriage_answer(snapshot: PlanningSnapshot) -> str:
     return ""
 
 
+def normalize_stored_marriage(snapshot: PlanningSnapshot) -> bool:
+    """A past marriage year on a loaded joint plan is already married.
+
+    Does what Yes does: file jointly and clear the year, so Run does not
+    reject it before the timeline page is opened. Returns True when it wrote.
+    """
+    if snapshot.household_mode != "joint":
+        return False
+    year = _calendar_year(_year_text(snapshot))
+    if year is None or year >= date.today().year:
+        return False
+    snapshot.set_raw(_shared_field("filing_status"), "mfj")
+    snapshot.set_raw(_shared_field("filing_status_after_marriage"), "mfj")
+    snapshot.set_raw(_shared_field("marriage_year"), "")
+    return True
+
+
 def marriage_answer_for_validation(
     snapshot: PlanningSnapshot,
     updates: list[dict[str, Any]] | None,

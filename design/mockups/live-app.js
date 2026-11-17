@@ -2649,7 +2649,7 @@
       const status = document.querySelector("[data-exp-ai-status]");
       if (status) {
         status.textContent =
-          "All rows checked — Apply still ignores other/education/mortgage for Base Expenses.";
+          "All rows checked — Apply still keeps property tax, healthcare, mortgage, other, and education out of Base Expenses.";
       }
     });
     document.querySelector("[data-exp-mark-checked-recurring]")?.addEventListener("click", () => {
